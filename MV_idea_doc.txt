@@ -1,0 +1,174 @@
+									Maquina virtual
+lenguaje : C;
+
+La maquinqa virtual se va a dividir en varios archivos
+
+el archivo principal "vmx.c" tendra una funcion step la cual ejecutara una serie de pasos para la lectura , dissasembler y ejecucion del programa.
+la funcion principal main tendra como inicializacion algunos registros necesarios para comenzar la lectura del codigo a traducir y luego iniciara con ejecucion de la funcion step, la cual se ejecutara secuencialmente mientras el IP!=DS (instruction pointer != data segment) es decir mientras el puntero de instrucciones no se haya caido.
+
+
+	void main(){
+		//inicializaciones de los registros y utilidades necesarias para la lectura
+		
+		do{
+			step(MV);
+		while(MV.IP<MV.DS);
+	}
+	
+una posible buena idea seria que la MV sea almacenada como un struct dentro del cual tenga los registros correspondientes a la maquina virtual
+
+
+	void step(MV){
+		// se ejecutara en una serie de 4 pasos
+		<1- Leer la instruccion apuntada por el registro IP>
+		<2-Almacenar el codigo de operacion  en el OPC>
+		<3-guardar el OP1 y OP2 los operandos A y B respectivamente>
+		<4-ubicar el registro IP en la proxima instruccion>
+		<5-ejecutar la instruccion>;
+	}
+	
+A continuacion se desarrollara la implementacion y sus utilidades necesarias para la creacion de cada uno de los pasos necesarios para la funcion step.
+
+0- STRUCT MAQUINA VIRTUAL(mv):
+
+	los componentes de la maquina virtual son los siguientes:
+		.memoria principal de 16KiB;
+		.tabla de descriptores de segmentos;
+		.32 registros de 4 bytes (17 para esta primera parte);
+
+	
+	#Define 32 REG
+	#define 4216 MEM // los 16kib div segmentos de 4 bytes
+	// tal vez una buena idea seria crear un archivo con los nombres de los registros como constantes a su codigo.
+	
+	typedef struct mv{
+		int registros[REG]; // el indice con significado referencia al codigo del registro referenciado, es decir, registros[0] = LAR
+		int  ram[4216];
+		int seg[MAX][2]; // en las filas los segmentos de memoria y en las columnas las direcciones de memoria logicas
+	}mv;
+	
+	// para tratar los componentes de la mv voy a necesitar distintas librerias que seran desarrolladas a continuacion:
+
+1-LEER LA INSTRUCCION APUNTADA POR EL REGISTRO IP
+
+	Para esto primero que nada tenemos que entender como nos va a venir una instruccion apuntada por el IP.
+	
+	Cada instruccion en lenguaje maquina se compone de un codigo de operacion y sus operandos.
+	
+	instruccion con 2 operandos:
+		
+		2 bits tipo de operando B;
+		2 bits tipo operando A;
+		5 bits cod de operacion (mnemonico);
+		
+		vease que en el limite entre la "seccion" de operandos y operacion se comparte un bit, y los unicos casos donde no habra bit ahi es en el
+		caso que el operando A sea de tipo inmediato o directamente no haya operando A.
+		
+	instruccion con 1 operando:
+		
+		2 bits tipo operando A
+		1 bit de relleno
+		5 bits codigo de operacion
+		
+		en este caso no se comparten bits ya que el operando a esta en los 2 bits mas significativos
+		
+	instruccion sin operandos:
+	
+		3 bits de relleno;
+		5 bits de codigo de operacion;
+		
+		el unico mnemonico que no tiene operandos es el de stop, es decir, fin de la ejecucion del codigo maquina
+		
+2- ALMACENAR EL CODIGO DE OPERACION EN EL REGISTRO OPC
+	
+	la instruccion apuntada por el registro IP viene codificada en 1 byte sin embargo para saber el codigo de operacion solamente nos interesan los
+	5 bits menos significativos. Para acceder a ellos probablemente usemos alguna mascara usando el and bit a bit entre el valor almacenado en el 
+	IP y un valor como 0b00011111 eso nos devolvera los valores de los 5 bits menos significativos.
+	Dependiendo del mnemonico al que pertenezca dicho codigo de operacion se la cantidad de operandos que voy a leer.
+	
+	void Get_OPC( int *opc , int ip){
+		
+		int masc = 0b00011111;
+		*opc = masc & ip;
+	}
+	
+	//algo asi seria el codigo para obtener el codigo de operacion directamente en el opc;
+	
+	
+3- GUARDAR EL OP1 Y EL OP2 DE LOS OPERANDOS A Y B RESPECTIVAMENTE
+
+	Para esta operacion vamos a usar la logica del almacenamiento del opc que es basicamente el mismo.
+	Luego de leer el opc podriamos decodificarlo para entender a que mnemonico pertenece y de ahi saber la cantidad de operandos que tendriamos que 
+	leer *(posiblemente muyu util para entender errores de sintaxis)* . 
+	
+	void Get_OPA_1( int ip , int ram[], int opA){
+		
+		int masc = 0b11000000;			// este es el caso en el que el mnemonico sea de un solo operando
+		*opA = masc & ram[ip];
+	}
+	
+	void Get_OPA_2(int ip , int *opA){
+		
+		int masc = 0b00110000;			// este el caso en el que sea un mnemonico con dos operandos
+		*opA = masc & ram[ip];
+	}
+	
+	
+	void Get_OPB( int ip, int ram[], int *opB){
+		
+		int masc = 0b11000000;			// este es el unico caso en el que el operando B esta presente
+		*opB = masc & ram[ip];
+	}
+	
+	
+	void decodif( int ram[], int *ip, int *opA, int *opB int *opC){
+		
+		Get_OPC(opc , ram, ip);
+		
+		if(OPC <= 8 && OPC >=00){ // un solo operando
+			Get_OPA_1(ip, ram, opA);
+			*opB = 32; // valor imposible
+		}
+		else{
+			if(OPC <= 31 && OPC >=16){ // dos operandos
+				Get_OPA_2(ip,ram,opA);
+				Get_OPB(ip,ram,opB);
+			}
+			else{
+				*opA = *opB = 32;
+			} // luego en el codigo utilice estos valores para indicar fin de la lectura
+		}
+	}
+	
+	Cabe recalcar que esta es una idea sin pulir y de modelo para despues implementar en el codigo.	
+		
+		
+-4 OBTENER LA PROXIMA INSTRUCCION
+
+	en lenguaje maquina esto seria identificar en el codigo hacia donde tiene que apuntar el IP luego de la instruccion que acaba de ejecutar.
+	En el caso normal seria autoincrementarlo en 1 y leer el siguiente espacio de memoria, pero en el caso de que haya alguna intruccion de salto
+	esta se tiene que mover a la direccion de memoria que indique la instruccion de salto.
+	
+	En todos los casos que el codigo de operacion sea distinto de 01 , 02, 03, 04, 05, 06 ,07 el ip directamente se incrementara
+	de lo contrario se el codigo de operacion fue alguno de ellos los dividiremos en 2.
+	
+	a) saltos condicionales(02-07):
+		
+		para realizar estos saltos la MV necesitara comprobar el valor del CC para ver la condicion. si el valor del CC corresponde al necesitado
+		por la instruccion de salto entonces IP apuntara al valor del operando A, el cual sera una direccion de memoria desde la que seguira leyen
+		do instrucciones. En caso de que el CC no corresponda a la condicion de salto entonces seguira de manera normal autoincrementando el valor
+		para leer la siguiente linea.
+		
+	b) salto incondicional(01)
+	
+		en los casos que el codigo de operacion sea igual 01 esto significara un salto incondicional, esto quiere decir que el IP apuntara direc
+		tamente a la direccion de memoria almacenada en el operandoA.
+	
+
+continuara...
+		
+	
+		
+		
+		
+		
