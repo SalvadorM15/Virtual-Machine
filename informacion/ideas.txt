@@ -1,0 +1,21 @@
+//ideas
+
+preguntas:
+
+-supongamos que me viene el archivo en binario y yo paso todas las instrucciones a la ram la cual esta segmentada en
+pedazos de 4 bytes. si yo por ejemplo leo una instruccion la cual ocupa 4 bytes y tiene un operando de registro que me indica
+que en la siguiente posicion tengo que leer el codigo de un regisro, entonces cuanto ocupa el registro, 1 byte o 4 bytes?
+
+- como almacenamos las instrucciones, en vectores o en enteros?
+
+-Como dividir la ram, en 4 bytes? si es asi como hacemos para leer instrucciones mas grandes. por ejemplo un mnemonico y 2 operandos de memoria
+
+-en caso de la aparicion de algun error es correcto realizar un break en el bucle de ejecucion.
+
+-Podria venir mal la cabecera?
+
+-como manejo el IP cuando la instruccion sea de 4 bytes
+
+
+    
+    

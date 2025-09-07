@@ -23,3 +23,6 @@ int logical_to_physical(int logical_dir ,int seg_table[MAX][2], int cant_bytes){
 
     return physical_dir;
 }
+
+
+
