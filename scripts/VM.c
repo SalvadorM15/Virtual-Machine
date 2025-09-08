@@ -9,9 +9,9 @@
 
 //la idea del mov es que le pase el operandoA y el valor del operando b, el valor del operando b se saca con los getters de valor antes de llamar a la funcion
 
-void mov(int opa , int opb , MaquinaVirtual mv){
+void mov(int opa , int opb , MaquinaVirtual mv , int Toperando){
 
-    if(sizeof(opa) == 1){ // es un registro
+    if(Toperando == 1){ // es un registro
         mv.registros[opa] = opb;
     }
     else{ // es un espacio de memoria porque no va a asignar a un inmediato
@@ -19,9 +19,9 @@ void mov(int opa , int opb , MaquinaVirtual mv){
     }
 }
 
-void add(int opa, int opb, MaquinaVirtual mv){
+void add(int opa, int opb, MaquinaVirtual mv , int Toperando){
     
-    if(sizeof(opa) == 1){ // es un registro
+    if(Toperando == 1){ // es un registro
         mv.registros[opa]+= opb;
     }
     else{ // es un espacio de memoria
@@ -31,14 +31,16 @@ void add(int opa, int opb, MaquinaVirtual mv){
 }
 
 
-void sub(int opa , int opb, MaquinaVirtual mv){
+void sub(int opa , int opb, MaquinaVirtual mv, int Toperando){
 
-    add(opa,-opb,mv); // es lo mismo que sumar el negado
+    add(opa,-1*opb,mv,Toperando); // es lo mismo que sumar el negado
+
+    
 }
 
-void mul(int opa, int opb, MaquinaVirtual mv){
+void mul(int opa, int opb, MaquinaVirtual mv, int Toperando){
     
-    if(sizeof(opa) == 1){ // es un registro
+    if(Toperando == 1){ // es un registro
         mv.registros[opa] = mv.registros[opa]*opb;
     }
     else{ // es un espacio de memoria
@@ -52,6 +54,8 @@ void div(int opa, int opb, MaquinaVirtual mv){
 
 
 }
+
+
 
 // continua...
 
@@ -128,3 +132,5 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual mv){
         mv.ram[direccion] = valor;
     }
 }
+
+

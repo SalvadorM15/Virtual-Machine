@@ -1,7 +1,7 @@
 #include <stdio.h>
 #define REG 32
 #define MEM 16384
-#define MAX 3
+#define MAX 2
 
 #define LAR 0
 #define MAR 1
@@ -25,6 +25,6 @@
 
 typedef struct{
     int registros[REG];
-    int ram[MEM];
+    char  ram[MEM];
     int seg[MAX][2];
  } MaquinaVirtual;

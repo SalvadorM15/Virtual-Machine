@@ -17,5 +17,6 @@ que en la siguiente posicion tengo que leer el codigo de un regisro, entonces cu
 -como manejo el IP cuando la instruccion sea de 4 bytes
 
 
+
     
     

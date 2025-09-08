@@ -1,2 +1,5 @@
 -Crear un handler de los mnemonicos
+-Terminar los mnemonicos
+-Crear una funcion de almacenamiento del archivo al code segment
+
 
