@@ -15,7 +15,6 @@ void main(){
 
 void mov(int opa , int opb , MaquinaVirtual *mv , int Toperando){
 
-<<<<<<< HEAD
     if(Toperando == 1){ // es un registro
         mv->registros[opa] = opb;
     }
@@ -36,7 +35,6 @@ void add(int opa, int opb, MaquinaVirtual *mv , int Toperando){
         set_valor_mem(opa, res , mv);
     }
     evaluarCC(res,mv);
-=======
 if(Toperando == 1){ // es un registro
 mv.registros[opa] = opb;
 }
@@ -54,7 +52,6 @@ else{ // es un espacio de memoria
 set_valor_mem(opa, get_valor_mem(opa,mv) + opb, mv);
 }
 
->>>>>>> ed9915bf1a66564e655b3183492e4f678080a377
 }
 
 
@@ -65,7 +62,6 @@ add(opa,-1*opb,mv,Toperando); // es lo mismo que sumar el negado
 
 }
 
-<<<<<<< HEAD
 void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     
     if(Toperando == 1){ // es un registro
@@ -76,7 +72,6 @@ void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         for(int i = 0; i<opb ; i++) //sumo opb cantidad de veces el valor de opa
             set_valor_mem(opa, get_valor_mem(opa,mv)+aux, mv);
     }
-=======
 void mul(int opa, int opb, MaquinaVirtual mv, int Toperando){
 
 if(Toperando == 1){ // es un registro
@@ -87,7 +82,6 @@ int aux = get_valor_mem(opa,mv);
 for(int i = 0; i<opb ; i++) //sumo opb cantidad de veces el valor de opa
 set_valor_mem(opa, get_valor_mem(opa,mv)+aux, mv);
 }
->>>>>>> ed9915bf1a66564e655b3183492e4f678080a377
 }
 
 void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
@@ -360,9 +354,7 @@ void evaluarCC(int res, MaquinaVirtual *mv){
         }
     mv->registros[CC]=valor;
 
-<<<<<<< HEAD
 }
-=======
 
 
 
@@ -388,4 +380,3 @@ void imprimirBinarioCompacto(int n) {
     }
     printf("\n");
 }
->>>>>>> ed9915bf1a66564e655b3183492e4f678080a377
