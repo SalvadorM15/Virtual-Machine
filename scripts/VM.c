@@ -1,5 +1,7 @@
-#include <stdio.h>
 #include "VM.h"
+#include <stdio.h>
+
+
 
 
 void main(){
@@ -35,31 +37,13 @@ void add(int opa, int opb, MaquinaVirtual *mv , int Toperando){
         set_valor_mem(opa, res , mv);
     }
     evaluarCC(res,mv);
-if(Toperando == 1){ // es un registro
-mv.registros[opa] = opb;
-}
-else{ // es un espacio de memoria porque no se puede asignar a un inmediato
-set_valor_mem(opa, opb, mv);
-}
-}
-
-void add(int opa, int opb, MaquinaVirtual mv , int Toperando){
-
-if(Toperando == 1){ // es un registro
-mv.registros[opa]+= opb;
-}
-else{ // es un espacio de memoria
-set_valor_mem(opa, get_valor_mem(opa,mv) + opb, mv);
-}
-
 }
 
 
 void sub(int opa , int opb, MaquinaVirtual *mv, int Toperando){
 
-add(opa,-1*opb,mv,Toperando); // es lo mismo que sumar el negado
-
-
+    add(opa,-1*opb,mv,Toperando); // es lo mismo que sumar el negado
+    
 }
 
 void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
@@ -68,22 +52,11 @@ void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa] = mv->registros[opa]*opb;
     }
     else{ // es un espacio de memoria
-        int aux = get_valor_mem(opa,mv);
-        for(int i = 0; i<opb ; i++) //sumo opb cantidad de veces el valor de opa
-            set_valor_mem(opa, get_valor_mem(opa,mv)+aux, mv);
+        int res = get_valor_mem(opa,mv);
+        res = res*opb;
+        set_valor_mem(opa,res,mv);
     }
-void mul(int opa, int opb, MaquinaVirtual mv, int Toperando){
-
-if(Toperando == 1){ // es un registro
-mv.registros[opa] = mv.registros[opa]*opb;
 }
-else{ // es un espacio de memoria
-int aux = get_valor_mem(opa,mv);
-for(int i = 0; i<opb ; i++) //sumo opb cantidad de veces el valor de opa
-set_valor_mem(opa, get_valor_mem(opa,mv)+aux, mv);
-}
-}
-
 void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     if (opb!=0){
         int cociente, resto;
@@ -140,6 +113,7 @@ void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 }
 
 void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+
     if (opb>=0 && opb<32){
         if (Toperando==1){
             aux = mv->registros[opa]>>opb;
@@ -211,6 +185,11 @@ void SWAP(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
 }
 
+//fin instrucciones de 2 operandos
+
+//instrucciones de 1 operando 
+
+
 void JMP(int op, MaquinaVirtual *mv, int Toperando){
     int dir;
     if (Toperando == 1)
@@ -277,6 +256,7 @@ void NOT(int op, MaquinaVirtual *mv, int Toperando){
 
 
 int get_logical_dir(MaquinaVirtual mv, int operandoM){
+
     int segmento = mv.registros[(operandoM >> 16)];
     int offset = operandoM & 0x0000FFFF;
     int direccion = (segmento << 16)+offset;
@@ -293,7 +273,7 @@ int logical_to_physical(int logical_dir ,int seg_table[MAX][2], int cant_bytes){
         physical_dir = seg_table[segment][0];
         physical_dir += (logical_dir & 0x0000FFFF);
         if(physical_dir > segment_limit || physical_dir + cant_bytes > segment_limit)
-        physical_dir = -1;
+            physical_dir = -1;
     }
     else
     physical_dir = -1;
@@ -323,7 +303,7 @@ if(direccion == -1){
     //aca deberia tirar algun error de segmentation foult
 }
 else{
-    return mv.ram[direccion];
+    return mv.ram[direccion] + (mv.ram[direccion+1] >> 16) + (mv.ram[direccion+2] >> 32) + (mv.ram[direccion+3] >> 64);
 }
 }
 
@@ -340,7 +320,15 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual mv){
         //devuelve error de segmentation foul
     }
     else{
-        mv.ram[direccion] = valor;
+        // 1er byte:
+        mv.ram[dirrecion] = valor & 0xFF000000;
+        // 2do byte:
+        mv.ram[dirrecion + 1] = (valor & 0x00FF0000)<<16;
+        // 3er byte:
+        mv.ram[dirrecion+2] = (valor & 0x0000FF00)<<32;
+        // 4to byte:
+        mv.ram[dirrecion+3] = (valor & 0x000000FF)<<64;
+
     }
 }
 
@@ -360,11 +348,11 @@ void evaluarCC(int res, MaquinaVirtual *mv){
 
 // Funciones para leer instrucciones
 
-void procesaOperacion(int instruccion, int *topA, int *topB, int *op){
+void procesaOperacion(char instruccion, int *topA, int *topB, int *op){
 
-    *topB = (instruccion & 0x000000C0) >> 6;
-    *topA = (instruccion & 0x00000030) >> 4;
-    *op = (instruccion & 0x0000001F);
+    *topB = (int)(instruccion & 0x000000C0) >> 6;
+    *topA = (int)(instruccion & 0x00000030) >> 4;
+    *op = (int)(instruccion & 0x0000001F);
 }
 
 void imprimirBinarioCompacto(int n) {
@@ -380,3 +368,21 @@ void imprimirBinarioCompacto(int n) {
     }
     printf("\n");
 }
+
+
+void instruction_handler(int opA, int opB, int operacion){ // seguimos con la idea de pasar el opb por el valor que tiene y no como operando en si
+
+    switch (operacion)
+    {
+    case MOV:
+        
+        break;
+    case ADD:
+
+        break;
+    default:
+        break;
+    }
+}
+
+//handler a terminar tuve un problema con el compilador
