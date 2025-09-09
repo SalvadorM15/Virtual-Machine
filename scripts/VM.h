@@ -2,6 +2,8 @@
 #define REG 32
 #define MEM 16384
 #define MAX 2
+#define ARCHNAME "program.vmx"
+#define VERSION 1
 
 #define LAR 0
 #define MAR 1
@@ -51,6 +53,11 @@
 #define RND 31
 
 // FIN DE LAS CONSTANTES DE OPERACION
+
+#define SEGFAULT 0
+#define DIV0 1
+#define INVINS 2
+#define INVVER 3
 
 typedef struct{
     int registros[REG];
