@@ -26,7 +26,7 @@ void mov(int opa , int opb , MaquinaVirtual *mv , int Toperando){
 }
 
 void add(int opa, int opb, MaquinaVirtual *mv , int Toperando){
-    
+
     int res;
     if(Toperando == 1){ // es un registro
         mv->registros[opa]+= opb;
@@ -43,11 +43,11 @@ void add(int opa, int opb, MaquinaVirtual *mv , int Toperando){
 void sub(int opa , int opb, MaquinaVirtual *mv, int Toperando){
 
     add(opa,-1*opb,mv,Toperando); // es lo mismo que sumar el negado
-    
+
 }
 
 void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
-    
+
     if(Toperando == 1){ // es un registro
         mv->registros[opa] = mv->registros[opa]*opb;
     }
@@ -81,7 +81,7 @@ void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 }
 
 void cmp(int opa, int opb, MaquinaVirtual *mv, int Toperando){
-    
+
     int res;
     if (Toperando == 1){
         res = mv->registros[opa]-opb;
@@ -144,7 +144,7 @@ void AND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
     evaluarCC(aux,mv);
 }
-    
+
 void OR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
@@ -187,7 +187,7 @@ void SWAP(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 
 //fin instrucciones de 2 operandos
 
-//instrucciones de 1 operando 
+//instrucciones de 1 operando
 
 
 void JMP(int op, MaquinaVirtual *mv, int Toperando){
@@ -197,7 +197,7 @@ void JMP(int op, MaquinaVirtual *mv, int Toperando){
     else
         dir = get_valor_mem(op,mv);
     mv->registros[IP]=dir;
-}  
+}
 
 void JZ(int op, MaquinaVirtual *mv, int Toperando){
     if (mv->registros[CC] & 0x01)
@@ -230,12 +230,12 @@ void NOT(int op, MaquinaVirtual *mv, int Toperando){
         mv->registros[op] = ~mv->registros[op];
         aux = mv->registros[op];
     }
-    else { 
+    else {
         aux = get_valor_mem(op, mv);
         aux = ~aux;
         set_valor_mem(op, aux, mv);
     }
-    evaluarCC(aux, mv); 
+    evaluarCC(aux, mv);
 }
 
 
@@ -375,7 +375,7 @@ void instruction_handler(int opA, int opB, int operacion){ // seguimos con la id
     switch (operacion)
     {
     case MOV:
-        
+
         break;
     case ADD:
 
@@ -386,3 +386,22 @@ void instruction_handler(int opA, int opB, int operacion){ // seguimos con la id
 }
 
 //handler a terminar tuve un problema con el compilador
+
+void error_handler(int error){
+
+    switch(error){
+    case SEGFAULT:
+        printf("ERROR: SEGMENTATION FAULT");
+        break;
+    case DIV0:
+        printf("ERROR: DIVISION POR 0 NO ESTA PERMITIDA");
+        break;
+    case INVINS:
+        printf("ERROR: INSTRUCCION INVALIDA");
+    case INVVER:
+        printf("ERROR: VERSION INVALIDA");
+
+    }
+
+    exit(1);
+}
