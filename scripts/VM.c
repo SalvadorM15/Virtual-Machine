@@ -9,39 +9,42 @@
 
 //la idea del mov es que le pase el operandoA y el valor del operando b, el valor del operando b se saca con los getters de valor antes de llamar a la funcion
 
-void mov(int opa , int opb , MaquinaVirtual mv , int Toperando){
+void mov(int opa , int opb , MaquinaVirtual *mv , int Toperando){
 
     if(Toperando == 1){ // es un registro
-        mv.registros[opa] = opb;
+        mv->registros[opa] = opb;
     }
     else{ // es un espacio de memoria porque no va a asignar a un inmediato
         set_valor_mem(opa, opb, mv);
     }
 }
 
-void add(int opa, int opb, MaquinaVirtual mv , int Toperando){
+void add(int opa, int opb, MaquinaVirtual *mv , int Toperando){
     
+    int res;
     if(Toperando == 1){ // es un registro
-        mv.registros[opa]+= opb;
+        mv->registros[opa]+= opb;
+        res = mv->registros[opa];
     }
     else{ // es un espacio de memoria
-        set_valor_mem(opa, get_valor_mem(opa,mv) + opb, mv);
+        res = get_valor_mem(opa,mv) + opb;
+        set_valor_mem(opa, res , mv);
     }
-
+    evaluarCC(res,mv);
 }
 
 
-void sub(int opa , int opb, MaquinaVirtual mv, int Toperando){
+void sub(int opa , int opb, MaquinaVirtual *mv, int Toperando){
 
     add(opa,-1*opb,mv,Toperando); // es lo mismo que sumar el negado
 
     
 }
 
-void mul(int opa, int opb, MaquinaVirtual mv, int Toperando){
+void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     
     if(Toperando == 1){ // es un registro
-        mv.registros[opa] = mv.registros[opa]*opb;
+        mv->registros[opa] = mv->registros[opa]*opb;
     }
     else{ // es un espacio de memoria
         int aux = get_valor_mem(opa,mv);
@@ -50,10 +53,181 @@ void mul(int opa, int opb, MaquinaVirtual mv, int Toperando){
     }
 }
 
-void div(int opa, int opb, MaquinaVirtual mv){
-
-
+void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    if (opb!=0){
+        int cociente, resto;
+        if (Toperando ==1){
+            cociente = mv->registros[opa]/opb;
+            resto = mv->registros[opa]%opb;
+            mv->registros[opa]=cociente;
+            mv->registros[AC]=resto;
+        }
+        else {
+            int aux = get_valor_mem(opa,mv);
+            cociente = v/opb;
+            resto = v%opb;
+            set_valor_mem(opa,cociente,mv);
+            mv->registros[AC]=resto;
+        }
+        evaluarCC(cociente,mv);
+    }
+    else {
+        //DIVISION POR CERO
+    }
 }
+
+void cmp(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    
+    int res;
+    if (Toperando == 1){
+        res = mv->registros[opa]-opb;
+    }
+    else {
+        int aux = get_valor_mem(opa,mv);
+        res = aux - opb;
+    }
+    evaluarCC(res, mv);
+}
+
+void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    int aux;
+    if (opb>=0  && opb<32 ) {
+        if (Toperando==1){
+            aux = mv->registros[opa]<<opb;
+            mv->registros[opa] = aux;
+        }
+        else {
+            aux = get_valor_mem(opa,mv);
+            aux = aux << opb;
+            set_valor_mem(opa,aux,mv);
+        }
+        evaluarCC(aux,mv);
+    }
+    else {
+        //ERROR DE VALIDACION OPB
+    }
+}
+
+void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    if (opb>=0 && opb<32){
+        if (Toperando==1){
+            aux = mv->registros[opa]>>opb;
+            mv->registros[opa] = aux;
+        }
+        else {
+            int aux = get_valor_mem(opa,mv);
+            aux = aux>>opb;
+            set_valor_mem(opa,aux,mv);
+        }
+        evaluarCC(aux,mv);
+    }
+    else {
+        //ERROR DE VALIDACION OPB
+    }
+}
+
+void AND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    int aux;
+    if (Toperando==1){
+        mv->registros[opa]&=opb;
+        aux = mv->registros[opa];
+    }
+    else {
+        aux = get_valor_mem(opa,mv);
+        aux &= opb;
+        set_valor_mem(opa,aux,mv);
+    }
+    evaluarCC(aux,mv);
+}
+    
+void OR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    int aux;
+    if (Toperando==1){
+        mv->registros[opa]|=opb;
+        aux = mv->registros[opa];
+    }
+    else {
+        aux = get_valor_mem(opa,mv);
+        aux |= opb;
+        set_valor_mem(opa,aux,mv);
+    }
+    evaluarCC(aux,mv);
+}
+
+void XOR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    int aux;
+    if (Toperando==1){
+        mv->registros[opa]^=opb;
+        aux = mv->registros[opa];
+    }
+    else {
+        aux = get_valor_mem(opa,mv);
+        aux ^= opb;
+        set_valor_mem(opa,aux,mv);
+    }
+    evaluarCC(aux,mv);
+}
+
+void SWAP(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    int aux=opb;
+    if (Toperando==1){
+        opb=mv->registros[opa];
+        mv->registros[opa]=aux;
+    }
+    else {
+        opb=get_valor_mem(opa,mv);
+        set_valor_mem(opa,aux,mv);
+    }
+}
+
+void JMP(int op, MaquinaVirtual *mv, int Toperando){
+    int dir;
+    if (Toperando == 1)
+        dir = mv->registros[op];
+    else
+        dir = get_valor_mem(op,mv);
+    mv->registros[IP]=dir;
+}  
+
+void JZ(int op, MaquinaVirtual *mv, int Toperando){
+    if (mv->registros[CC] & 0x01)
+        JMP(op,mv,Toperando);
+}
+
+void JP(int op, MaquinaVirtual *mv, int Toperando){
+    if (mv->registros[CC]==0x00)
+        JMP(op,mv,Toperando);
+}
+void JN(int op, MaquinaVirtual *mv, int Toperando){
+    if (mv->registros[CC] & 0x02)
+        JMP(op,mv,Toperando);
+}
+void JNZ(int op, MaquinaVirtual *mv, int Toperando){
+    if (!mv->registros[CC] & 0x01)
+        JMP(op,mv,Toperando);
+}
+void JNP(int op, MaquinaVirtual *mv, int Toperando){
+    if (mv->registros[CC] & 0x03)
+        JMP(op,mv,Toperando);
+}
+void JNN(int op, MaquinaVirtual *mv, int Toperando){
+    if (!mv->registros[CC] & 0x02)
+        JMP(op,mv,Toperando);
+}
+void NOT(int op, MaquinaVirtual *mv, int Toperando){
+    int aux;
+    if (Toperando == 1){
+        mv->registros[op] = ~mv->registros[op];
+        aux = mv->registros[op];
+    }
+    else { 
+        aux = get_valor_mem(op, mv);
+        aux = ~aux;
+        set_valor_mem(op, aux, mv);
+    }
+    evaluarCC(aux, mv); 
+}
+
 
 
 
@@ -133,4 +307,14 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual mv){
     }
 }
 
+void evaluarCC(int res, MaquinaVirtual *mv){
+    int valor = 0;
+    if (res==0)
+        valor |= (0x01);
+        else {
+            if (res<0)
+                valor |= (0x02);
+        }
+    mv->registros[CC]=valor;
 
+}
