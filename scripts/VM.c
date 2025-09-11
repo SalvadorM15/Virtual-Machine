@@ -352,10 +352,40 @@ void evaluarCC(int res, MaquinaVirtual *mv){
 
 void procesaOperacion(char instruccion, int *topA, int *topB, int *op){
 
-    *topB = (int)(instruccion & 0x000000C0) >> 6;
-    *topA = (int)(instruccion & 0x00000030) >> 4;
     *op = (int)(instruccion & 0x0000001F);
+    if((instruccion & 0x30) != 0){
+        *topB = (instruccion & >> 6) &0x03;
+        *topA = (instruccion >> 4) &0x03;
+    }
+    else{
+        *topB = 0;
+        if(instruccion & 0xF0 == 0){
+            *topA = 0;
+        }
+        else{
+            *topA = (instruccion >> 6) & 0x03;
+        }
+    }
 }
+
+void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
+    int i;
+    mv->registros[OP1] = 0;
+    mv->registros[OP2] = 0;
+    for(i = mv->registros[ip]; i < mv->registros[ip] + topB; i++){
+        mv->registros[OP2] = mv->registros[OP2] << 8;
+        mv->registros[OP2] += mv->ram[i];
+    }
+    mv->registros[ip] += topB;
+
+    for(i = mv->registros[ip]; i < mv->registros[ip] + topA; i++){
+        mv->registros[OP1] = mv->registros[OP1] << 8;
+        mv->registros[OP1] += mv->ram[i];
+    }
+    mv->registros[ip] += topA;
+}
+
+
 
 void imprimirBinarioCompacto(int n) {
     if (n == 0) {
