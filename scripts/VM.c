@@ -33,7 +33,7 @@ void add(int opa, int opb, MaquinaVirtual *mv , int Toperando){
         res = mv->registros[opa];
     }
     else{ // es un espacio de memoria
-        res = get_valor_mem(opa,mv) + opb;
+        res = get_valor_mem(opa,*mv) + opb;
         set_valor_mem(opa, res , mv);
     }
     evaluarCC(res,mv);
@@ -67,6 +67,7 @@ void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[AC]=resto;
         }
         else {
+            int v;
             int aux = get_valor_mem(opa,*mv);
             cociente = v/opb;
             resto = v%opb;
@@ -87,7 +88,7 @@ void cmp(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         res = mv->registros[opa]-opb;
     }
     else {
-        int aux = get_valor_mem(opa,mv);
+        int aux = get_valor_mem(opa,*mv);
         res = aux - opb;
     }
     evaluarCC(res, mv);
@@ -101,7 +102,7 @@ void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[opa] = aux;
         }
         else {
-            aux = get_valor_mem(opa,mv);
+            aux = get_valor_mem(opa,*mv);
             aux = aux << opb;
             set_valor_mem(opa,aux,mv);
         }
@@ -121,7 +122,7 @@ void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[opa] = aux;
         }
         else {
-            int aux = get_valor_mem(opa,mv);
+            int aux = get_valor_mem(opa,*mv);
             aux = aux>>opb;
             set_valor_mem(opa,aux,mv);
         }
@@ -139,7 +140,7 @@ void and(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         aux = mv->registros[opa];
     }
     else {
-        aux = get_valor_mem(opa,mv);
+        aux = get_valor_mem(opa,*mv);
         aux &= opb;
         set_valor_mem(opa,aux,mv);
     }
@@ -153,7 +154,7 @@ void or(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         aux = mv->registros[opa];
     }
     else {
-        aux = get_valor_mem(opa,mv);
+        aux = get_valor_mem(opa,*mv);
         aux |= opb;
         set_valor_mem(opa,aux,mv);
     }
@@ -167,7 +168,7 @@ void xor(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         aux = mv->registros[opa];
     }
     else {
-        aux = get_valor_mem(opa,mv);
+        aux = get_valor_mem(opa,*mv);
         aux ^= opb;
         set_valor_mem(opa,aux,mv);
     }
@@ -181,7 +182,7 @@ void swap(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa]=aux;
     }
     else {
-        opb=get_valor_mem(opa,mv);
+        opb=get_valor_mem(opa,*mv);
         set_valor_mem(opa,aux,mv);
     }
 }
@@ -196,7 +197,7 @@ void jmp(int op, MaquinaVirtual *mv, int Toperando){
     if (Toperando == 1)
         dir = mv->registros[op];
     else
-        dir = get_valor_mem(op,mv);
+        dir = get_valor_mem(op,*mv);
     mv->registros[IP]=dir;
 }
 
@@ -225,14 +226,14 @@ void jnn(int op, MaquinaVirtual *mv, int Toperando){
     if (!mv->registros[CC] & 0x02)
         jmp(op,mv,Toperando);
 }
-void NOT(int op, MaquinaVirtual *mv, int Toperando){
+void not(int op, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando == 1){
         mv->registros[op] = ~mv->registros[op];
         aux = mv->registros[op];
     }
     else {
-        aux = get_valor_mem(op, mv);
+        aux = get_valor_mem(op, *mv);
         aux = ~aux;
         set_valor_mem(op, aux, mv);
     }
