@@ -52,7 +52,7 @@ void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa] = mv->registros[opa]*opb;
     }
     else{ // es un espacio de memoria
-        int res = get_valor_mem(opa,mv);
+        int res = get_valor_mem(opa,*mv);
         res = res*opb;
         set_valor_mem(opa,res,mv);
     }
@@ -67,7 +67,7 @@ void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[AC]=resto;
         }
         else {
-            int aux = get_valor_mem(opa,mv);
+            int aux = get_valor_mem(opa,*mv);
             cociente = v/opb;
             resto = v%opb;
             set_valor_mem(opa,cociente,mv);
@@ -115,6 +115,7 @@ void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 
     if (opb>=0 && opb<32){
+        int aux;
         if (Toperando==1){
             aux = mv->registros[opa]>>opb;
             mv->registros[opa] = aux;
@@ -131,7 +132,7 @@ void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
 }
 
-void AND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void and(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]&=opb;
@@ -145,7 +146,7 @@ void AND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     evaluarCC(aux,mv);
 }
 
-void OR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void or(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]|=opb;
@@ -159,7 +160,7 @@ void OR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     evaluarCC(aux,mv);
 }
 
-void XOR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void xor(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]^=opb;
@@ -173,7 +174,7 @@ void XOR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     evaluarCC(aux,mv);
 }
 
-void SWAP(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void swap(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux=opb;
     if (Toperando==1){
         opb=mv->registros[opa];
@@ -190,7 +191,7 @@ void SWAP(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 //instrucciones de 1 operando
 
 
-void JMP(int op, MaquinaVirtual *mv, int Toperando){
+void jmp(int op, MaquinaVirtual *mv, int Toperando){
     int dir;
     if (Toperando == 1)
         dir = mv->registros[op];
@@ -199,30 +200,30 @@ void JMP(int op, MaquinaVirtual *mv, int Toperando){
     mv->registros[IP]=dir;
 }
 
-void JZ(int op, MaquinaVirtual *mv, int Toperando){
+void jz(int op, MaquinaVirtual *mv, int Toperando){
     if (mv->registros[CC] & 0x01)
-        JMP(op,mv,Toperando);
+        jmp(op,mv,Toperando);
 }
 
-void JP(int op, MaquinaVirtual *mv, int Toperando){
+void jp(int op, MaquinaVirtual *mv, int Toperando){
     if (mv->registros[CC]==0x00)
-        JMP(op,mv,Toperando);
+        jmp(op,mv,Toperando);
 }
-void JN(int op, MaquinaVirtual *mv, int Toperando){
+void jn(int op, MaquinaVirtual *mv, int Toperando){
     if (mv->registros[CC] & 0x02)
-        JMP(op,mv,Toperando);
+        jmp(op,mv,Toperando);
 }
-void JNZ(int op, MaquinaVirtual *mv, int Toperando){
+void jnz(int op, MaquinaVirtual *mv, int Toperando){
     if (!mv->registros[CC] & 0x01)
-        JMP(op,mv,Toperando);
+        jmp(op,mv,Toperando);
 }
-void JNP(int op, MaquinaVirtual *mv, int Toperando){
+void jnp(int op, MaquinaVirtual *mv, int Toperando){
     if (mv->registros[CC] & 0x03)
-        JMP(op,mv,Toperando);
+        jmp(op,mv,Toperando);
 }
-void JNN(int op, MaquinaVirtual *mv, int Toperando){
+void jnn(int op, MaquinaVirtual *mv, int Toperando){
     if (!mv->registros[CC] & 0x02)
-        JMP(op,mv,Toperando);
+        jmp(op,mv,Toperando);
 }
 void NOT(int op, MaquinaVirtual *mv, int Toperando){
     int aux;
@@ -307,27 +308,27 @@ else{
 }
 }
 
-void set_valor_mem(int operandoM, int valor, MaquinaVirtual mv){
+void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
     // busco la direccion logica
 
-    int direccion = get_logical_dir(mv, operandoM);
+    int direccion = get_logical_dir(*mv, operandoM);
 
     // paso la direccion logica a fisica
 
-    direccion = logical_to_physical(direccion , mv.seg , MEM);
+    direccion = logical_to_physical(direccion , mv->seg , MEM);
 
     if(direccion == -1){
         //devuelve error de segmentation foul
     }
     else{
         // 1er byte:
-        mv.ram[dirrecion] = valor & 0xFF000000;
+        mv->ram[direccion] = valor & 0xFF000000;
         // 2do byte:
-        mv.ram[dirrecion + 1] = (valor & 0x00FF0000)<<16;
+        mv->ram[direccion + 1] = (valor & 0x00FF0000)<<16;
         // 3er byte:
-        mv.ram[dirrecion+2] = (valor & 0x0000FF00)<<32;
+        mv->ram[direccion+2] = (valor & 0x0000FF00)<<32;
         // 4to byte:
-        mv.ram[dirrecion+3] = (valor & 0x000000FF)<<64;
+        mv->ram[direccion+3] = (valor & 0x000000FF)<<64;
 
     }
 }
