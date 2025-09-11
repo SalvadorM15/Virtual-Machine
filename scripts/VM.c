@@ -1,11 +1,11 @@
 #include "VM.h"
 #include <stdio.h>
-
+#include <time.h>
 
 
 
 void main(){
-
+    srand(time(NULL));
 }
 
 
@@ -47,15 +47,17 @@ void sub(int opa , int opb, MaquinaVirtual *mv, int Toperando){
 }
 
 void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
-
+    int res;
     if(Toperando == 1){ // es un registro
-        mv->registros[opa] = mv->registros[opa]*opb;
+        res = mv->registros[opa]*opb
+        mv->registros[opa] = res;
     }
     else{ // es un espacio de memoria
-        int res = get_valor_mem(opa,*mv);
+        res = get_valor_mem(opa,*mv);
         res = res*opb;
         set_valor_mem(opa,res,mv);
     }
+    evaluarCC(res,mv);
 }
 void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     if (opb!=0){
@@ -78,6 +80,7 @@ void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
     else {
         //DIVISION POR CERO
+        error_handler(DIV0);
     }
 }
 
@@ -133,7 +136,7 @@ void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
 }
 
-void and(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void AND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]&=opb;
@@ -147,7 +150,7 @@ void and(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     evaluarCC(aux,mv);
 }
 
-void or(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void OR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]|=opb;
@@ -161,7 +164,7 @@ void or(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     evaluarCC(aux,mv);
 }
 
-void xor(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void XOR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]^=opb;
@@ -184,6 +187,46 @@ void swap(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     else {
         opb=get_valor_mem(opa,*mv);
         set_valor_mem(opa,aux,mv);
+    }
+}
+
+void LDH(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    // defino dos variables para construir el valor final del OperandoA
+    int parteB = (opb & 0x0000FFFF) << 16; //utilizo una mascara para obtener los dos bytes menos significativos del OPB
+    int parteA;
+    if (Toperando==1){ 
+        parteA=mv->registros[opa]&0x0000FFFF; //utilizo una mascara para obtener los dos bytes menos significativos del OPa
+        mv->registros[opa]= parteB | parteA;
+    }
+    else {
+        int aux = get_valor_mem(opa,mv);
+        menosSig= aux & 0x0000FFFF;
+        set_valor_mem(opa, masSig | menosSig,mv); 
+    }
+
+}
+
+void LDL(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    int parteB = (opb & 0x0000FFFF) ;
+    int parteA;
+    if (Toperando==1){
+        parteA =mv->registros[opa] & 0xFFFF0000;
+        mv->registros[opa] = parteB | parteA;
+    }
+    else {
+        int aux = get_valor_mem(opa,mv);
+        parteA= aux & 0xFFFF0000;
+        set_valor_mem(opa, parteA | parteB,mv);
+    }
+}
+
+void RND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    int valor = rand() % (opb+1); // obtengo un valor random entre 0 y el opb
+    if (Toperando==1){
+        mv->registros[opa]=valor;
+    }
+    else {
+        set_valor_mem(opa,valor,mv);
     }
 }
 
@@ -226,7 +269,7 @@ void jnn(int op, MaquinaVirtual *mv, int Toperando){
     if (!mv->registros[CC] & 0x02)
         jmp(op,mv,Toperando);
 }
-void not(int op, MaquinaVirtual *mv, int Toperando){
+void NOT(int op, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando == 1){
         mv->registros[op] = ~mv->registros[op];
@@ -353,7 +396,39 @@ void evaluarCC(int res, MaquinaVirtual *mv){
 void procesaOperacion(char instruccion, int *topA, int *topB, int *op){
 
     *op = (int)(instruccion & 0x0000001F);
+    if((instruccion & 0x30) != 0){
+        *topB = (instruccion & >> 6) &0x03;
+        *topA = (instruccion >> 4) &0x03;
+    }
+    else{
+        *topB = 0;
+        if(instruccion & 0xF0 == 0){
+            *topA = 0;
+        }
+        else{
+            *topA = (instruccion >> 6) & 0x03;
+        }
+    }
 }
+
+void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
+    int i;
+    mv->registros[OP1] = 0;
+    mv->registros[OP2] = 0;
+    for(i = mv->registros[ip]; i < mv->registros[ip] + topB; i++){
+        mv->registros[OP2] = mv->registros[OP2] << 8;
+        mv->registros[OP2] += mv->ram[i];
+    }
+    mv->registros[ip] += topB;
+
+    for(i = mv->registros[ip]; i < mv->registros[ip] + topA; i++){
+        mv->registros[OP1] = mv->registros[OP1] << 8;
+        mv->registros[OP1] += mv->ram[i];
+    }
+    mv->registros[ip] += topA;
+}
+
+
 
 void imprimirBinarioCompacto(int n) {
     if (n == 0) {
@@ -451,46 +526,5 @@ void lectura_arch(MaquinaVirtual *mv){
 
         fclose(arch);
     }
-
-}
-
-
-void iniciarMV(MaquinaVirtual *mv, int codeSegment){
-
-    mv->seg[0][0] = mv->registros[CS] = 0;; //insico que el codesegment arranca al inicio de la memoria
-    mv->seg[0][1] = codeSegment; // indico que el codesegment termina en el valor leido en la cabecera (codeSegment)
-    mv->seg[1][0] = mv->registros[DS] = MEM - codeSegment; // indico que el data segment empieza una celda despues del code segment
-    mv->seg[1][1] = MEM; // indico que el data segment termina al final de la memoria
-
-    mv->registros[IP] = mv->registros[CS];
-
-}
-
-int get_tipoOperacion(char instruccion){
-    int r=0;
-    int op = instruccion & 31;
-    if(op >= 0 && op<=8)
-        r = 1;
-    else
-        if(op>=16 && op<=31)
-            r = 2;
-
-    return r;
-}
-void step(MaquinaVirtual *mv){
-
-    //primero leo la instruccion apuntada por el IP
-    int ToperandoA,ToperandoB;
-    char instruccion = mv->ram[mv->registros[IP]];
-    int opl;
-    int Toperacion = get_tipoOperacion(instruccion);
-
-    if(Toperacion == 1){
-        
-    }
-    //dependiendo del valor de los operandos que tipo de operacion es 1operando , 2 operandos o stop
-
-    
-    
 
 }
