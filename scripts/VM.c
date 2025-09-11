@@ -455,3 +455,44 @@ void lectura_arch(MaquinaVirtual *mv){
     }
 
 }
+
+
+void iniciarMV(MaquinaVirtual *mv, int codeSegment){
+
+    mv->seg[0][0] = mv->registros[CS] = 0;; //insico que el codesegment arranca al inicio de la memoria
+    mv->seg[0][1] = codeSegment; // indico que el codesegment termina en el valor leido en la cabecera (codeSegment)
+    mv->seg[1][0] = mv->registros[DS] = MEM - codeSegment; // indico que el data segment empieza una celda despues del code segment
+    mv->seg[1][1] = MEM; // indico que el data segment termina al final de la memoria
+
+    mv->registros[IP] = mv->registros[CS];
+
+}
+
+int get_tipoOperacion(char instruccion){
+    int r=0;
+    int op = instruccion & 31;
+    if(op >= 0 && op<=8)
+        r = 1;
+    else
+        if(op>=16 && op<=31)
+            r = 2;
+
+    return r;
+}
+void step(MaquinaVirtual *mv){
+
+    //primero leo la instruccion apuntada por el IP
+    int ToperandoA,ToperandoB;
+    char instruccion = mv->ram[mv->registros[IP]];
+    int opA;
+    int Toperacion = get_tipoOperacion(instruccion);
+
+    if(Toperacion == 1){
+        
+    }
+    //dependiendo del valor de los operandos que tipo de operacion es 1operando , 2 operandos o stop
+
+    
+    
+
+}
