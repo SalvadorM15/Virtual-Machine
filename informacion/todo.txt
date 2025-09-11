@@ -1,4 +1,5 @@
--Crear un handler de los mnemonicos
--Terminar los mnemonicos
+-terminar los mnemonicos
+-terminar el handler de mnemonicos
+-terminar la funcion step
 
 

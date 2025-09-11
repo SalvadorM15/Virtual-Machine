@@ -49,7 +49,7 @@ void sub(int opa , int opb, MaquinaVirtual *mv, int Toperando){
 void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int res;
     if(Toperando == 1){ // es un registro
-        res = mv->registros[opa]*opb
+        res = mv->registros[opa]*opb;
         mv->registros[opa] = res;
     }
     else{ // es un espacio de memoria
@@ -136,7 +136,7 @@ void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
 }
 
-void AND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void and(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]&=opb;
@@ -150,7 +150,7 @@ void AND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     evaluarCC(aux,mv);
 }
 
-void OR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void or(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]|=opb;
@@ -164,7 +164,7 @@ void OR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     evaluarCC(aux,mv);
 }
 
-void XOR(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void xor(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando==1){
         mv->registros[opa]^=opb;
@@ -190,7 +190,7 @@ void swap(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
 }
 
-void LDH(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void ldh(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     // defino dos variables para construir el valor final del OperandoA
     int parteB = (opb & 0x0000FFFF) << 16; //utilizo una mascara para obtener los dos bytes menos significativos del OPB
     int parteA;
@@ -199,14 +199,14 @@ void LDH(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa]= parteB | parteA;
     }
     else {
-        int aux = get_valor_mem(opa,mv);
-        menosSig= aux & 0x0000FFFF;
-        set_valor_mem(opa, masSig | menosSig,mv); 
+        int aux = get_valor_mem(opa,*mv);
+        parteA= aux & 0x0000FFFF;
+        set_valor_mem(opa, parteA | parteB,mv); 
     }
 
 }
 
-void LDL(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void ldl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int parteB = (opb & 0x0000FFFF) ;
     int parteA;
     if (Toperando==1){
@@ -214,13 +214,13 @@ void LDL(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa] = parteB | parteA;
     }
     else {
-        int aux = get_valor_mem(opa,mv);
+        int aux = get_valor_mem(opa,*mv);
         parteA= aux & 0xFFFF0000;
         set_valor_mem(opa, parteA | parteB,mv);
     }
 }
 
-void RND(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void rnd(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int valor = rand() % (opb+1); // obtengo un valor random entre 0 y el opb
     if (Toperando==1){
         mv->registros[opa]=valor;
@@ -269,7 +269,7 @@ void jnn(int op, MaquinaVirtual *mv, int Toperando){
     if (!mv->registros[CC] & 0x02)
         jmp(op,mv,Toperando);
 }
-void NOT(int op, MaquinaVirtual *mv, int Toperando){
+void not(int op, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (Toperando == 1){
         mv->registros[op] = ~mv->registros[op];
@@ -397,7 +397,7 @@ void procesaOperacion(char instruccion, int *topA, int *topB, int *op){
 
     *op = (int)(instruccion & 0x0000001F);
     if((instruccion & 0x30) != 0){
-        *topB = (instruccion & >> 6) &0x03;
+        *topB = (instruccion >> 6) &0x03;
         *topA = (instruccion >> 4) &0x03;
     }
     else{
@@ -415,17 +415,17 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
     int i;
     mv->registros[OP1] = 0;
     mv->registros[OP2] = 0;
-    for(i = mv->registros[ip]; i < mv->registros[ip] + topB; i++){
+    for(i = mv->registros[IP]; i < mv->registros[IP] + topB; i++){
         mv->registros[OP2] = mv->registros[OP2] << 8;
         mv->registros[OP2] += mv->ram[i];
     }
-    mv->registros[ip] += topB;
+    mv->registros[IP] += topB;
 
-    for(i = mv->registros[ip]; i < mv->registros[ip] + topA; i++){
+    for(i = mv->registros[IP]; i < mv->registros[IP] + topA; i++){
         mv->registros[OP1] = mv->registros[OP1] << 8;
         mv->registros[OP1] += mv->ram[i];
     }
-    mv->registros[ip] += topA;
+    mv->registros[IP] += topA;
 }
 
 
