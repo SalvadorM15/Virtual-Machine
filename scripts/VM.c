@@ -33,7 +33,7 @@ void add(int opa, int opb, MaquinaVirtual *mv , int Toperando){
         res = mv->registros[opa];
     }
     else{ // es un espacio de memoria
-        res = get_valor_mem(opa,*mv) + opb;
+        res = get_valor_mem(opa,mv) + opb;
         set_valor_mem(opa, res , mv);
     }
     evaluarCC(res,mv);
@@ -53,7 +53,7 @@ void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa] = res;
     }
     else{ // es un espacio de memoria
-        res = get_valor_mem(opa,*mv);
+        res = get_valor_mem(opa,mv);
         res = res*opb;
         set_valor_mem(opa,res,mv);
     }
@@ -70,7 +70,7 @@ void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         }
         else {
             int v;
-            int aux = get_valor_mem(opa,*mv);
+            int aux = get_valor_mem(opa,mv);
             cociente = v/opb;
             resto = v%opb;
             set_valor_mem(opa,cociente,mv);
@@ -91,7 +91,7 @@ void cmp(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         res = mv->registros[opa]-opb;
     }
     else {
-        int aux = get_valor_mem(opa,*mv);
+        int aux = get_valor_mem(opa,mv);
         res = aux - opb;
     }
     evaluarCC(res, mv);
@@ -105,7 +105,7 @@ void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[opa] = aux;
         }
         else {
-            aux = get_valor_mem(opa,*mv);
+            aux = get_valor_mem(opa,mv);
             aux = aux << opb;
             set_valor_mem(opa,aux,mv);
         }
@@ -125,7 +125,7 @@ void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[opa] = aux;
         }
         else {
-            int aux = get_valor_mem(opa,*mv);
+            int aux = get_valor_mem(opa,mv);
             aux = aux>>opb;
             set_valor_mem(opa,aux,mv);
         }
@@ -143,7 +143,7 @@ void and(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         aux = mv->registros[opa];
     }
     else {
-        aux = get_valor_mem(opa,*mv);
+        aux = get_valor_mem(opa,mv);
         aux &= opb;
         set_valor_mem(opa,aux,mv);
     }
@@ -157,7 +157,7 @@ void or(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         aux = mv->registros[opa];
     }
     else {
-        aux = get_valor_mem(opa,*mv);
+        aux = get_valor_mem(opa,mv);
         aux |= opb;
         set_valor_mem(opa,aux,mv);
     }
@@ -171,7 +171,7 @@ void xor(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         aux = mv->registros[opa];
     }
     else {
-        aux = get_valor_mem(opa,*mv);
+        aux = get_valor_mem(opa,mv);
         aux ^= opb;
         set_valor_mem(opa,aux,mv);
     }
@@ -185,7 +185,7 @@ void swap(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa]=aux;
     }
     else {
-        opb=get_valor_mem(opa,*mv);
+        opb=get_valor_mem(opa,mv);
         set_valor_mem(opa,aux,mv);
     }
 }
@@ -199,7 +199,7 @@ void ldh(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa]= parteB | parteA;
     }
     else {
-        int aux = get_valor_mem(opa,*mv);
+        int aux = get_valor_mem(opa,mv);
         parteA= aux & 0x0000FFFF;
         set_valor_mem(opa, parteA | parteB,mv); 
     }
@@ -214,7 +214,7 @@ void ldl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
         mv->registros[opa] = parteB | parteA;
     }
     else {
-        int aux = get_valor_mem(opa,*mv);
+        int aux = get_valor_mem(opa,mv);
         parteA= aux & 0xFFFF0000;
         set_valor_mem(opa, parteA | parteB,mv);
     }
@@ -240,7 +240,7 @@ void jmp(int op, MaquinaVirtual *mv, int Toperando){
     if (Toperando == 1)
         dir = mv->registros[op];
     else
-        dir = get_valor_mem(op,*mv);
+        dir = get_valor_mem(op,mv);
     mv->registros[IP]=dir;
 }
 
@@ -276,7 +276,7 @@ void not(int op, MaquinaVirtual *mv, int Toperando){
         aux = mv->registros[op];
     }
     else {
-        aux = get_valor_mem(op, *mv);
+        aux = get_valor_mem(op, mv);
         aux = ~aux;
         set_valor_mem(op, aux, mv);
     }
@@ -335,31 +335,38 @@ return mv.registros[operandoR];
 
 }
 
-int get_valor_mem(int operandoM, MaquinaVirtual mv){
+int get_valor_mem(int operandoM, MaquinaVirtual *mv){
 
-// busco la direccion logica
 
-int direccion = get_logical_dir(mv, operandoM);
+    mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logica
 
-// paso la direccion logica a fisica
+    // paso la direccion logica a fisica
 
-direccion = logical_to_physical(direccion , mv.seg , MEM);
-if(direccion == -1){
+    int direccion = logical_to_physical(mv->registros[LAR], mv->seg , MEM);
+    mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
+    mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
+
+    if(direccion == -1){
     //aca deberia tirar algun error de segmentation foult
-}
-else{
-    return mv.ram[direccion] + (mv.ram[direccion+1] >> 16) + (mv.ram[direccion+2] >> 32) + (mv.ram[direccion+3] >> 64);
-}
+    }
+    else{
+        mv->registros[MBR] = mv->ram[direccion] + (mv->ram[direccion+1] >> 16) + (mv->ram[direccion+2] >> 32) + (mv->ram[direccion+3] >> 64); 
+        return mv->registros[MBR];
+    }
 }
 
 void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
     // busco la direccion logica
 
-    int direccion = get_logical_dir(*mv, operandoM);
+    mv->registros[LAR] = get_logical_dir(*mv, operandoM);
+    mv->registros[MBR] = valor;
 
     // paso la direccion logica a fisica
 
-    direccion = logical_to_physical(direccion , mv->seg , MEM);
+    int direccion = logical_to_physical(mv->registros[LAR] , mv->seg , MEM);
+    mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
+    mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
+
 
     if(direccion == -1){
         //devuelve error de segmentation foul
@@ -445,17 +452,66 @@ void imprimirBinarioCompacto(int n) {
 }
 
 
-void instruction_handler(int opA, int opB, int operacion){ // seguimos con la idea de pasar el opb por el valor que tiene y no como operando en si
+void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, int ToperandoA){ // seguimos con la idea de pasar el opb por el valor que tiene y no como operando en si
 
     switch (operacion)
     {
     case MOV:
-
+            mov(opA,opB,mv,ToperandoA);
         break;
     case ADD:
-
+            add(opA,opB,mv,ToperandoA);
         break;
+    case SUB:
+            sub(opA,opB,mv,ToperandoA);
+    case MUL:
+            mul(opA,opB,mv,ToperandoA);
+    case DIV:
+            div(opA,opB,mv,ToperandoA);
+    case CMP:
+            cmp(opA,opB,mv,ToperandoA);
+    case SHL:
+            shl(opA,opB,mv,ToperandoA);
+    case SHR:
+            shr(opA,opB,mv,ToperandoA);
+    case SAR:
+            sar(); // mnemonico no codeado todavia
+    case AND:
+            and(opA,opB,mv,ToperandoA);
+    case OR:
+            or(opA,opB,mv,ToperandoA);
+    case XOR:
+            xor(opA,opB,mv,ToperandoA);
+    case SWAP:
+            swap(opA,opB,mv,ToperandoA);
+    case LDL:
+            ldl(opA,opB,mv,ToperandoA);
+    case LDH:
+            ldh(opA,opB,mv,ToperandoA);
+    case RND:
+            rnd(opA,opB,mv,ToperandoA);
+    case SYS:
+            sys(); // mnemonico no codeado todavia
+    case JMP:
+            jmp(opA,mv,ToperandoA);
+    case JZ:
+            jz(opA,mv,ToperandoA);
+    case JP:
+            jp(opA,mv,ToperandoA);
+    case JN:
+            jn(opA,mv,ToperandoA);
+    case JNZ:
+            jnz(opA,mv,ToperandoA);
+    case JNP:
+            jnp(opA,mv,ToperandoA);
+    case JNN:
+            jnn(opA,mv,ToperandoA);
+    case NOT:
+            not(opA,mv,ToperandoA);
+    case STOP:
+            mv->registros[IP] = -1;
     default:
+            error_handler(INVINS);
         break;
     }
 }
@@ -526,5 +582,54 @@ void lectura_arch(MaquinaVirtual *mv){
 
         fclose(arch);
     }
+
+}
+
+void iniciaMV(MaquinaVirtual *mv, int codSize){ // codsize leido de la cabecera
+
+    //inicio la tabla de segmentos
+    mv->seg[0][0] = 0;
+    mv->seg[0][1] = codSize;
+    mv->seg[1][0] = MEM-codSize;
+    mv->seg[1][1] = MEM;
+    
+    //inicializo los registros de segmento
+    mv->registros[CS] = 0; // ya se que no esta bien inicializarlo asi, a preguntar
+    mv->registros[DS] = 1<<16;
+
+    //inicializo el ip al principio del codigo
+
+    mv->registros[IP] = mv->registros[CS];
+
+}
+
+void step(MaquinaVirtual *mv){
+
+    //primer paso: leer la instruccion del registro IP
+
+    int ToperandoA,ToperandoB,operacion;
+    char instruccion = mv->ram[mv->registros[IP]];
+
+    //leo los valores del cs y muevo el IP
+
+    procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
+    lee_operandos(ToperandoA,ToperandoB,mv); // lee los siguientes bytes de los operandos A y B y mueve el ip
+    mv->registros[OPC] = operacion;
+
+    //lo valores operando 1 y 2 quedan guardados en los registros OP1 Y OP2 respectivamente
+
+    //ejecuto la operacion llamada
+    int opA = (mv->registros[OP1]) & 0x00FFFFFF; // le saco el byte de tipo de operando
+    int opB = (mv->registros[OP2]) & 0x00FFFFFF;
+    // del operando B me quedo el valor, para eso uso el byte del tipo de operando
+    if(mv->registros[OP2] & 0xFF000000 == 1)
+        opB = mv->registros[opB];
+    else
+        if(mv->registros[OP2] & 0xFF00000 == 3)
+            opB = get_valor_mem(opB,mv);
+        
+        //en el otro caso no modifico al opB ya que seria un inmediato que es valor que ya almacena
+
+    instruction_handler(opA,opB,mv->registros[OPC],mv,ToperandoA);
 
 }
