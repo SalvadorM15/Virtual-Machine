@@ -1,4 +1,3 @@
--terminar los mnemonicos
 -modificar el leer arch para cualquier nombre de archivo
 -crear una funcion que lea solo la cabecera y devuelva la cantidad de bytes del codigo
 
