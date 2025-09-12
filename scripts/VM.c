@@ -125,7 +125,7 @@ void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[opa] = aux;
         }
         else {
-            int aux = get_valor_mem(opa,mv);
+            aux = get_valor_mem(opa,mv);
             aux = aux>>opb;
             set_valor_mem(opa,aux,mv);
         }
@@ -194,14 +194,14 @@ void ldh(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     // defino dos variables para construir el valor final del OperandoA
     int parteB = (opb & 0x0000FFFF) << 16; //utilizo una mascara para obtener los dos bytes menos significativos del OPB
     int parteA;
-    if (Toperando==1){ 
+    if (Toperando==1){
         parteA=mv->registros[opa]&0x0000FFFF; //utilizo una mascara para obtener los dos bytes menos significativos del OPa
         mv->registros[opa]= parteB | parteA;
     }
     else {
         int aux = get_valor_mem(opa,mv);
         parteA= aux & 0x0000FFFF;
-        set_valor_mem(opa, parteA | parteB,mv); 
+        set_valor_mem(opa, parteA | parteB,mv);
     }
 
 }
@@ -234,7 +234,67 @@ void rnd(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 
 //instrucciones de 1 operando
 
-
+void sys(int op, MaquinaVirtual *mv){
+int cantCeldas = mv->registros[ECX] & 0x0000FFFF;
+int tamanioCelda = (mv->registros[ECX] >> 16) & 0x0000FFFF;
+int direccionInicial = get_logical_dir(*mv, EDX);
+direccionInicial = logical_to_physical(direccionInicial, mv->seg, MEM); // obtengo la direccion fisica inicial
+if (direccionInicial+cantCeldas*tamanioCelda>MEM){ // evaluo si me voy a quedar sin memoria
+    error_handler(SEGFAULT);
+    return;
+}
+else {
+    for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
+            printf("[%d] :", i);
+            if (op==1){
+                int entrada=0;
+                switch (mv->registros[EAX]){ // evaluo el tipo de dato de entrada
+                case 4: leerBinario(&entrada);
+                        break;
+                case 3: scanf("%x" , &entrada);
+                        break;
+                case 2: scanf("%o", &entrada);
+                        break;
+                case 1: {
+                        char ch=0;
+                        scanf("%c", &ch);
+                        entrada=(unsigned char) ch;
+                        break;
+                }
+                case 0: scanf("%d" , &entrada);
+                        break;
+                }
+                for (int n=0; n < tamanioCelda; n++){
+                    mv->ram[i+n] = ((entrada >> 8*n)) & 0xFF; // empaqueto byte por byte el dato de entrada;
+                }
+            }
+            else {
+                int salida = 0;
+                for (int n=0; n<tamanioCelda; n++)
+                    salida |= ((int)mv->ram[i+n]) << (8*n); // rearmo el dato de salida, que estaba previamente guardado byte por byte
+                switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
+                case 4: imprimirBinarioCompacto(salida);
+                        break;
+                case 3: printf("%x \n", salida);
+                        break;
+                case 2: printf("%o \n", salida);
+                        break;
+                case 1: {
+                        unsigned char ch =(salida & 0xFF);
+                        if (ch>=32 && ch<=126) // evaluo si es caracter imprimible
+                            printf("%c \n" , ch);
+                            else
+                                printf(". \n");
+                        printf("%c \n", salida);
+                        break;
+                }
+                case 0: printf("%d \n", salida);
+                        break;
+                }
+            }
+    }
+}
+}
 void jmp(int op, MaquinaVirtual *mv, int Toperando){
     int dir;
     if (Toperando == 1)
@@ -282,7 +342,11 @@ void not(int op, MaquinaVirtual *mv, int Toperando){
     }
     evaluarCC(aux, mv);
 }
+ // Sin operandos
 
+ void stop(MaquinaVirtual *mv){
+    mv->registros[IP] = -1;
+ }
 
 
 
@@ -350,7 +414,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
     //aca deberia tirar algun error de segmentation foult
     }
     else{
-        mv->registros[MBR] = mv->ram[direccion] + (mv->ram[direccion+1] >> 16) + (mv->ram[direccion+2] >> 32) + (mv->ram[direccion+3] >> 64); 
+        mv->registros[MBR] = mv->ram[direccion] + (mv->ram[direccion+1] >> 16) + (mv->ram[direccion+2] >> 32) + (mv->ram[direccion+3] >> 64);
         return mv->registros[MBR];
     }
 }
@@ -435,7 +499,12 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
     mv->registros[IP] += topA;
 }
 
-
+void leerBinario(int *entrada) {
+    char buffer[64];  // guardamos el número como string
+    scanf("%63s", buffer);
+    // strtol convierte string a entero, indicando base 2
+    *entrada = (int) strtol(buffer, NULL, 2);
+}
 
 void imprimirBinarioCompacto(int n) {
     if (n == 0) {
@@ -491,7 +560,7 @@ void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, in
     case RND:
             rnd(opA,opB,mv,ToperandoA);
     case SYS:
-            sys(); // mnemonico no codeado todavia
+            sys(opA,mv); // mnemonico no codeado todavia
     case JMP:
             jmp(opA,mv,ToperandoA);
     case JZ:
@@ -509,7 +578,7 @@ void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, in
     case NOT:
             not(opA,mv,ToperandoA);
     case STOP:
-            mv->registros[IP] = -1;
+            stop(mv);
     default:
             error_handler(INVINS);
         break;
@@ -592,7 +661,7 @@ void iniciaMV(MaquinaVirtual *mv, int codSize){ // codsize leido de la cabecera
     mv->seg[0][1] = codSize;
     mv->seg[1][0] = MEM-codSize;
     mv->seg[1][1] = MEM;
-    
+
     //inicializo los registros de segmento
     mv->registros[CS] = 0; // ya se que no esta bien inicializarlo asi, a preguntar
     mv->registros[DS] = 1<<16;
@@ -627,7 +696,7 @@ void step(MaquinaVirtual *mv){
     else
         if(mv->registros[OP2] & 0xFF00000 == 3)
             opB = get_valor_mem(opB,mv);
-        
+
         //en el otro caso no modifico al opB ya que seria un inmediato que es valor que ya almacena
 
     instruction_handler(opA,opB,mv->registros[OPC],mv,ToperandoA);
