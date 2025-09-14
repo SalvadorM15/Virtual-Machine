@@ -606,11 +606,10 @@ void error_handler(int error){
     exit(1);
 }
 
-void lectura_arch(MaquinaVirtual *mv){
+void lectura_arch(MaquinaVirtual *mv, short int *tamseg){
     FILE *arch;
     char num;
     int i;
-    short int tamSeg;
 
     arch = fopen(ARCHNAME, "rb");
     if(arch != NULL){
@@ -627,10 +626,7 @@ void lectura_arch(MaquinaVirtual *mv){
             if(num != VERSION)
                 error_handler(INVVER);
             else{
-                fread(&tamSeg, sizeof(short int), 1, arch);
-                if(!feof(arch))
-                    (mv->seg)[0][1] = tamSeg;
-
+                fread(tamSeg, sizeof(short int), 1, arch);
             }
 
         }
@@ -638,13 +634,13 @@ void lectura_arch(MaquinaVirtual *mv){
         i = 0;
         if(!feof(arch)){
             fread(&num, sizeof(char), 1, arch);
-            while(!feof(arch) && i < tamSeg){
+            while(!feof(arch) && i < *tamSeg){
                 (mv->ram)[i] = num;
                 i++;
                 fread(&num, sizeof(char), 1, arch);
             }
 
-            if(i == tamSeg){
+            if(i == *tamSeg){
                 error_handler(SEGFAULT);
             }
         }

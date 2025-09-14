@@ -112,7 +112,7 @@ void imprimirBinarioCompacto(int n);
 void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, int ToperandoA);
 void error_handler(int error);
 
-void lectura_arch(MaquinaVirtual *mv);
+void lectura_arch(MaquinaVirtual *mv, short int *tamseg);
 void iniciaMV(MaquinaVirtual *mv, int codSize);
 void step(MaquinaVirtual *mv);
 
