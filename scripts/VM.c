@@ -1,7 +1,7 @@
 #include "VM.h"
 #include <stdio.h>
 #include <time.h>
-
+#include <stdlib.h>
 
 
 void main(){
@@ -59,7 +59,7 @@ void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     }
     evaluarCC(res,mv);
 }
-void div(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+void div_op(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     if (opb!=0){
         int cociente, resto;
         if (Toperando ==1){
@@ -101,38 +101,62 @@ void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int aux;
     if (opb>=0  && opb<32 ) {
         if (Toperando==1){
-            aux = mv->registros[opa]<<opb;
-            mv->registros[opa] = aux;
+            aux = (unsigned int) mv->registros[opa];
+            aux = aux<<opb;
+            mv->registros[opa] = (int)aux;
         }
         else {
-            aux = get_valor_mem(opa,mv);
+            aux = (unsigned int) get_valor_mem(opa,mv);
             aux = aux << opb;
-            set_valor_mem(opa,aux,mv);
+            set_valor_mem(opa,(int)aux,mv);
         }
-        evaluarCC(aux,mv);
+        evaluarCC((int)aux,mv);
     }
     else {
-        //ERROR DE VALIDACION OPB
+        error_handler(INVINS);
     }
 }
 
 void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    if (opb >= 0 && opb < 32) {
+        unsigned int aux;  // usamos unsigned para que sea lÃ³gico (rellena con 0s)
+        if (Toperando == 1) {
+            aux = (unsigned int) mv->registros[opa];
+            aux = aux >> opb;
+            mv->registros[opa] = (int) aux;  // casteo de vuelta a int si tus registros son signed
+        }
+        else {
+            aux = (unsigned int) get_valor_mem(opa, mv);
+            aux = aux >> opb;
+            set_valor_mem(opa, (int) aux, mv);
+        }
+        evaluarCC((int)aux, mv);
+    }
+    else {
+        // Error: desplazamiento fuera de rango
+        error_handler(INVINS);
+    }
+}
 
-    if (opb>=0 && opb<32){
+void sar(int opa, int opb, MaquinaVirtual *mv, int Toperando){
+    if (opb >= 0 && opb < 32) {
         int aux;
-        if (Toperando==1){
-            aux = mv->registros[opa]>>opb;
+        if (Toperando == 1) {
+            // Operando A es un registro
+            aux = mv->registros[opa] >> opb;
             mv->registros[opa] = aux;
         }
         else {
-            aux = get_valor_mem(opa,mv);
-            aux = aux>>opb;
-            set_valor_mem(opa,aux,mv);
+            // Operando A es memoria
+            aux = get_valor_mem(opa, mv);
+            aux = aux >> opb;  // mantiene el signo
+            set_valor_mem(opa, aux, mv);
         }
-        evaluarCC(aux,mv);
+        evaluarCC(aux, mv);
     }
     else {
-        //ERROR DE VALIDACION OPB
+        // Error: desplazamiento fuera de rango
+        error_handler(INVINS);
     }
 }
 
@@ -305,7 +329,7 @@ void jmp(int op, MaquinaVirtual *mv, int Toperando){
 }
 
 void jz(int op, MaquinaVirtual *mv, int Toperando){
-    if (mv->registros[CC] & 0x01)
+    if ((mv->registros[CC] & 0x01)!=0)
         jmp(op,mv,Toperando);
 }
 
@@ -314,19 +338,19 @@ void jp(int op, MaquinaVirtual *mv, int Toperando){
         jmp(op,mv,Toperando);
 }
 void jn(int op, MaquinaVirtual *mv, int Toperando){
-    if (mv->registros[CC] & 0x02)
+    if ((mv->registros[CC] & 0x02) != 0)
         jmp(op,mv,Toperando);
 }
 void jnz(int op, MaquinaVirtual *mv, int Toperando){
-    if (!mv->registros[CC] & 0x01)
+    if ((mv->registros[CC] & 0x01) == 0)
         jmp(op,mv,Toperando);
 }
 void jnp(int op, MaquinaVirtual *mv, int Toperando){
-    if (mv->registros[CC] & 0x03)
+    if ((mv->registros[CC] & 0x03)!=0)
         jmp(op,mv,Toperando);
 }
 void jnn(int op, MaquinaVirtual *mv, int Toperando){
-    if (!mv->registros[CC] & 0x02)
+    if ((mv->registros[CC] & 0x02)==0)
         jmp(op,mv,Toperando);
 }
 void not(int op, MaquinaVirtual *mv, int Toperando){
@@ -500,7 +524,7 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
 }
 
 void leerBinario(int *entrada) {
-    char buffer[64];  // guardamos el número como string
+    char buffer[64];  // guardamos el nï¿½mero como string
     scanf("%63s", buffer);
     // strtol convierte string a entero, indicando base 2
     *entrada = (int) strtol(buffer, NULL, 2);
@@ -520,6 +544,128 @@ void imprimirBinarioCompacto(int n) {
     printf("\n");
 }
 
+char* identificarMnemonico(int codigo){
+    switch (codigo){
+    case SYS: return "SYS";
+            break;
+    case JMP: return "JMP";
+            break;
+    case JZ: return "JZ";
+            break;
+    case JP: return "JP";
+            break;
+    case JN: return "JN";
+            break;
+    case JNZ: return "JNZ";
+            break;
+    case JNP: return "JNP";
+            break;
+    case JNN: return "JNN";
+            break;
+    case NOT: return "NOT";
+            break;
+    case STOP: return "STOP";
+            break;
+    case MOV: return "MOV";
+            break;
+    case ADD: return "ADD";
+            break;
+    case SUB: return "SUB";
+            break;
+    case MUL: return "MUL";
+            break;
+    case DIV: return "DIV";
+            break;
+    case CMP: return "CMP";
+            break;
+    case SHL: return "SHL";
+            break;
+    case SHR: return "SHR";
+            break;
+    case SAR: return "SAR";
+            break;
+    case AND: return "AND";
+            break;
+    case OR: return "OR";
+            break;
+    case XOR: return "XOR";
+            break;
+    case SWAP: return "SWAP";
+            break;
+    case LDL: return "LDL";
+            break;
+    case LDH: return "LDH";
+            break;
+    case RND: return "RND";
+            break;
+    default: return "instruccion no identificada";
+            break;
+    }
+}
+
+char* identificarRegistro(int op){
+    switch (op){
+    case LAR: return "LAR";
+              break;
+    case MAR: return "MAR";
+            break;
+    case MBR: return "MBR";
+            break;
+    case IP: return "IP";
+            break;
+    case OPC: return "OPC";
+            break;
+    case OP1: return "OP1";
+            break;
+    case OP2: return "OP2";
+            break;
+    case EAX: return "EAX";
+            break;
+    case EBX: return "EBX";
+            break;
+    case ECX: return "ECX";
+            break;
+    case EDX: return "EDX";
+            break;
+    case EFX: return "EFX";
+            break;
+    case EEX: return "EEX";
+            break;
+    case AC: return "AC";
+            break;
+    case CC: return "CC";
+            break;
+    case CS: return "CS";
+            break;
+    case DS: return "DS";
+            break;
+    default: "registro no encontrado";
+            break;
+    }
+}
+
+void imprimir_operador(int op, int Toperando){
+    switch (Toperando){
+    case 1: printf("%s", identificarRegistro(op));
+            break;
+    case 2: printf("%d", op);
+            break;
+    case 3:
+    }
+}
+void escribirInstruccion(MaquinaVirtual mv,int opA, int opB,int ToperandoA, int ToperandoB){
+    printf("[%x] %x    | %s", mv->registros[IP],identificarMnemonico(mv->registros[OPC]));
+    if (ToperandoA>0 && ToperandoB>0){
+        imprimir_operador(opA,ToperandoA);
+        imprimir_operador(opB,ToperandoB);
+    }
+    else
+        if (ToperandoA>0){
+            imprimir_operador(opA,ToperandoA);
+    }
+
+}
+
 
 void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, int ToperandoA){ // seguimos con la idea de pasar el opb por el valor que tiene y no como operando en si
 
@@ -533,52 +679,76 @@ void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, in
         break;
     case SUB:
             sub(opA,opB,mv,ToperandoA);
+            break;
     case MUL:
             mul(opA,opB,mv,ToperandoA);
+            break;
     case DIV:
-            div(opA,opB,mv,ToperandoA);
+            div_op(opA,opB,mv,ToperandoA);
+            break;
     case CMP:
             cmp(opA,opB,mv,ToperandoA);
+            break;
     case SHL:
             shl(opA,opB,mv,ToperandoA);
+            break;
     case SHR:
             shr(opA,opB,mv,ToperandoA);
+            break;
     case SAR:
-            sar(); // mnemonico no codeado todavia
+            sar(opA,opB,mv,ToperandoA);
+            break;
     case AND:
             and(opA,opB,mv,ToperandoA);
+            break;
     case OR:
             or(opA,opB,mv,ToperandoA);
+            break;
     case XOR:
             xor(opA,opB,mv,ToperandoA);
+            break;
     case SWAP:
             swap(opA,opB,mv,ToperandoA);
+            break;
     case LDL:
             ldl(opA,opB,mv,ToperandoA);
+            break;
     case LDH:
             ldh(opA,opB,mv,ToperandoA);
+            break;
     case RND:
             rnd(opA,opB,mv,ToperandoA);
+            break;
     case SYS:
-            sys(opA,mv); // mnemonico no codeado todavia
+            sys(opA,mv);
+            break;
     case JMP:
             jmp(opA,mv,ToperandoA);
+            break;
     case JZ:
             jz(opA,mv,ToperandoA);
+            break;
     case JP:
             jp(opA,mv,ToperandoA);
+            break;
     case JN:
             jn(opA,mv,ToperandoA);
+            break;
     case JNZ:
             jnz(opA,mv,ToperandoA);
+            break;
     case JNP:
             jnp(opA,mv,ToperandoA);
+            break;
     case JNN:
             jnn(opA,mv,ToperandoA);
+            break;
     case NOT:
             not(opA,mv,ToperandoA);
+            break;
     case STOP:
             stop(mv);
+            break;
     default:
             error_handler(INVINS);
         break;
@@ -606,7 +776,7 @@ void error_handler(int error){
     exit(1);
 }
 
-void lectura_arch(MaquinaVirtual *mv, short int *tamseg){
+void lectura_arch(MaquinaVirtual *mv, short int *tamSeg){
     FILE *arch;
     char num;
     int i;
@@ -696,5 +866,7 @@ void step(MaquinaVirtual *mv){
         //en el otro caso no modifico al opB ya que seria un inmediato que es valor que ya almacena
 
     instruction_handler(opA,opB,mv->registros[OPC],mv,ToperandoA);
-
+    if (flag_disassembler){
+        escribirInstruccion(mv, instruccion, opA,opB,ToperandoA,ToperandoB);
+    }
 }
