@@ -776,12 +776,12 @@ void error_handler(int error){
     exit(1);
 }
 
-void lectura_arch(MaquinaVirtual *mv, short int *tamSeg){
+void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch){
     FILE *arch;
     char num;
     int i;
 
-    arch = fopen(ARCHNAME, "rb");
+    arch = fopen(nombre_arch, "rb");
     if(arch != NULL){
 
         fread(&num, sizeof(char), 1, arch);
