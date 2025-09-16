@@ -2,7 +2,6 @@
 #define REG 32
 #define MEM 16384
 #define MAX 2
-#define ARCHNAME "program.vmx"
 #define VERSION 1
 
 #define LAR 0
@@ -75,7 +74,7 @@ void mov(int opa, int opb, MaquinaVirtual *mv, int Toperando);
 void add(int opa, int opb, MaquinaVirtual *mv, int Toperando);
 void sub(int opa, int opb, MaquinaVirtual *mv, int Toperando);
 void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void div(int opa, int opb, MaquinaVirtual *mv, int Toperando);
+void div_op(int opa, int opb, MaquinaVirtual *mv, int Toperando);
 void cmp(int opa, int opb, MaquinaVirtual *mv, int Toperando);
 void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando);
 void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando);
@@ -90,15 +89,14 @@ void rnd(int opa, int opb, MaquinaVirtual *mv, int Toperando);
 void jmp(int op, MaquinaVirtual *mv, int Toperando);
 void jz(int op, MaquinaVirtual *mv, int Toperando);
 void jp(int op, MaquinaVirtual *mv, int Toperando);
-void jn(int op, MaquinaVirtual *mv, int Toperando);
 void jnz(int op, MaquinaVirtual *mv, int Toperando);
 void jnp(int op, MaquinaVirtual *mv, int Toperando);
 void jnn(int op, MaquinaVirtual *mv, int Toperando);
 void not(int op, MaquinaVirtual *mv, int Toperando);
+void jn_op(int op, MaquinaVirtual *mv, int Toperando);
 
 int get_logical_dir(MaquinaVirtual mv, int operandoM);
-int logical_to_physical(int logical_dir, int seg_table[MAX][2], int cant_bytes);
-int get_valor_reg(int operandoR, MaquinaVirtual mv);
+int logical_to_physical(int logical_dir, short int seg_table[MAX][2], int cant_bytes);
 int get_valor_mem(int operandoM, MaquinaVirtual *mv);
 
 void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv);
@@ -112,7 +110,7 @@ void imprimirBinarioCompacto(int n);
 void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, int ToperandoA);
 void error_handler(int error);
 
-void lectura_arch(MaquinaVirtual *mv, short int *tamseg);
+void lectura_arch(MaquinaVirtual *mv, short int *tamseg, char nombre_arch[]);
 void iniciaMV(MaquinaVirtual *mv, int codSize);
 void step(MaquinaVirtual *mv);
 
