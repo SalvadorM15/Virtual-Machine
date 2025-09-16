@@ -254,10 +254,10 @@ void rnd(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 //instrucciones de 1 operando
 
 void sys(int op, MaquinaVirtual *mv){
-int cantCeldas = mv->registros[ECX] & 0x0000FFFF;
-int tamanioCelda = (mv->registros[ECX] >> 16) & 0x0000FFFF;
-int direccionInicial = get_logical_dir(*mv, EDX);
-direccionInicial = logical_to_physical(direccionInicial, mv->seg, MEM); // obtengo la direccion fisica inicial
+int cantCeldas = (mv->registros[ECX] & 0x0000FFFF);
+int tamanioCelda = ((mv->registros[ECX] >> 16) & 0x0000FFFF);
+int direccionInicial = mv->registros[EDX]; // obtengo la direccion logica inicial
+direccionInicial = logical_to_physical(direccionInicial, mv->seg, tamanioCelda*cantCeldas); // obtengo la direccion fisica inicial
 if (direccionInicial+cantCeldas*tamanioCelda>MEM){ // evaluo si me voy a quedar sin memoria
     error_handler(SEGFAULT);
     return;
@@ -385,16 +385,16 @@ void not(int op, MaquinaVirtual *mv, int Toperando){
 
 int get_logical_dir(MaquinaVirtual mv, int operandoM){ //funcion creada para obtener la direccion logica de un operando de memoria
 
-    int segmento = mv.registros[(operandoM >> 16)];
-    int offset = operandoM & 0x0000FFFF;
-    int direccion = (segmento << 16)+offset;
+    int segmento = (mv.registros[(operandoM & 0x00FF0000) >> 16]);
+    int offset = (operandoM & 0x0000FFFF);
+    int direccion = segmento + offset ;
 
     return direccion;
 }
 
 int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_bytes){ // funcion para pasar una direccion logica a una fisica
     int physical_dir;
-    int segment = (logical_dir & 0xFFFF0000) >> 16;
+    int segment =((logical_dir & 0xFFFF0000) >> 16);
     int segment_limit = seg_table[segment][0] + seg_table[segment][1];
 
     if(segment < MAX){
@@ -419,15 +419,20 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
 
     // paso la direccion logica a fisica
 
-    int direccion = logical_to_physical(mv->registros[LAR], mv->seg , MEM);
+    int direccion = logical_to_physical(mv->registros[LAR], mv->seg , 4);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
     mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
     if(direccion == -1){
-    //aca deberia tirar algun error de segmentation foult
+        error_handler(SEGFAULT);
+        return -1;
     }
     else{
-        mv->registros[MBR] = mv->ram[direccion] + (mv->ram[direccion+1] >> 16) + (mv->ram[direccion+2] >> 32) + (mv->ram[direccion+3] >> 64);
+        mv->registros[MBR] = (mv->ram[direccion] << 24) |
+                     (mv->ram[direccion + 1] << 16) |
+                     (mv->ram[direccion + 2] << 8) |
+                     (mv->ram[direccion + 3]);
+
         return mv->registros[MBR];
     }
 }
@@ -440,23 +445,23 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 
     // paso la direccion logica a fisica
 
-    int direccion = logical_to_physical(mv->registros[LAR] , mv->seg , MEM);
+    int direccion = logical_to_physical(mv->registros[LAR] , mv->seg , 4);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
     mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
 
     if(direccion == -1){
-        //devuelve error de segmentation foul
+        error_handler(SEGFAULT);
     }
     else{
         // 1er byte:
-        mv->ram[direccion] = valor & 0xFF000000;
+        mv->ram[direccion]     = (valor >> 24) & 0xFF;
         // 2do byte:
-        mv->ram[direccion + 1] = (valor & 0x00FF0000)<<16;
+        mv->ram[direccion + 1] = (valor >> 16) & 0xFF;
         // 3er byte:
-        mv->ram[direccion+2] = (valor & 0x0000FF00)<<32;
+        mv->ram[direccion + 2] = (valor >> 8)  & 0xFF;
         // 4to byte:
-        mv->ram[direccion+3] = (valor & 0x000000FF)<<64;
+        mv->ram[direccion + 3] = valor & 0xFF;
 
     }
 }
@@ -486,7 +491,7 @@ void procesaOperacion(char instruccion, int *topA, int *topB, int *op){
     }
     else{
         *topB = 0;
-        if(instruccion & 0xF0 == 0){
+        if((instruccion & 0xF0) == 0){
             *topA = 0;
         }
         else{
@@ -497,27 +502,26 @@ void procesaOperacion(char instruccion, int *topA, int *topB, int *op){
 
 void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
     int i;
-    mv->registros[OP1] = topA;
-    mv->registros[OP2] = topB;
-    for(i = mv->registros[IP]; i < mv->registros[IP] + topB; i++){
+    mv->registros[OP1] = 0;
+    mv->registros[OP2] = 0;
+    for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topB+1); i++){
         mv->registros[OP2] = mv->registros[OP2] << 8;
         mv->registros[OP2] += mv->ram[i];
     }
     mv->registros[IP] += topB;
 
-    for(i = mv->registros[IP]; i < mv->registros[IP] + topA; i++){
+    for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topA+1); i++){
         mv->registros[OP1] = mv->registros[OP1] << 8;
         mv->registros[OP1] += mv->ram[i];
     }
     mv->registros[IP] += topA;
+    mv->registros[IP]++; // avanzo el ip al proximo byte de instruccion porque sino queda en el ultimo operando
+    //agrego el tipo de operando en el byte mas significativo
+    mv->registros[OP1] += (topA << 24);
+    mv->registros[OP2] += (topB << 24);
 }
 
-void leerBinario(int *entrada) {
-    char buffer[64];  // guardamos el n�mero como string
-    scanf("%63s", buffer);
-    // strtol convierte string a entero, indicando base 2
-    *entrada = (int) strtol(buffer, NULL, 2);
-}
+
 
 
 
@@ -616,16 +620,17 @@ void error_handler(int error){
 
     switch(error){
     case SEGFAULT:
-        printf("ERROR: SEGMENTATION FAULT");
+        printf("ERROR: SEGMENTATION FAULT\n");
         break;
     case DIV0:
-        printf("ERROR: DIVISION POR 0 NO ESTA PERMITIDA");
+        printf("ERROR: DIVISION POR 0 NO ESTA PERMITIDA\n");
         break;
     case INVINS:
-        printf("ERROR: INSTRUCCION INVALIDA");
+        printf("ERROR: INSTRUCCION INVALIDA\n");
+        break;
     case INVVER:
-        printf("ERROR: VERSION INVALIDA");
-
+        printf("ERROR: VERSION INVALIDA\n");
+        break;
     }
 
     exit(1);
@@ -639,6 +644,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
     arch = fopen(nombre_arch, "rb");
     if(arch != NULL){
 
+        //lee los primero 5 bytes de la cabecera
         fread(&num, sizeof(char), 1, arch);
         i = 0;
         while(!feof(arch) && i<5){
@@ -646,16 +652,12 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
             fread(&num, sizeof(char), 1, arch);
             i++;
         }
-
+        //lee el tamanio del segmento de codigo
+        printf("\n");
         if(!feof(arch)){
-            if(num != VERSION)
-                error_handler(INVVER);
-            else{
-                fread(tamSeg, sizeof(short int), 1, arch);
-            }
-
+            fread(tamSeg, sizeof(short int), 1, arch);
         }
-
+        //comienza la lectura del codigo y lo almacena en la ram
         i = 0;
         if(!feof(arch)){
             fread(&num, sizeof(char), 1, arch);
@@ -669,7 +671,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
                 error_handler(SEGFAULT);
             }
         }
-
+        printf("Se leyeron %d bytes de codigo\n", i);
         fclose(arch);
     }
 
@@ -680,12 +682,12 @@ void iniciaMV(MaquinaVirtual *mv, int codSize){ // codsize leido de la cabecera
     //inicio la tabla de segmentos
     mv->seg[0][0] = 0;
     mv->seg[0][1] = codSize;
-    mv->seg[1][0] = MEM-codSize;
-    mv->seg[1][1] = MEM;
+    mv->seg[1][0] = codSize+1;
+    mv->seg[1][1] = MEM-1;
 
     //inicializo los registros de segmento
     mv->registros[CS] = 0; // ya se que no esta bien inicializarlo asi, a preguntar
-    mv->registros[DS] = 1<<16;
+    mv->registros[DS] = (1<<16); // el segmento de datos comienza despues del segmento de codigo
 
     //inicializo el ip al principio del codigo
 
@@ -712,17 +714,26 @@ void step(MaquinaVirtual *mv){
     int opA = (mv->registros[OP1]) & 0x00FFFFFF; // le saco el byte de tipo de operando
     int opB = (mv->registros[OP2]) & 0x00FFFFFF;
     // del operando B me quedo el valor, para eso uso el byte del tipo de operando
-    if((mv->registros[OP2] & 0xFF000000)>>24 == 1)
+    if(((mv->registros[OP2] & 0xFF000000)>>24) == 1)
         opB = mv->registros[opB];
     else
-        if((mv->registros[OP2] & 0xFF00000)>>24 == 3)
+        if(((mv->registros[OP2] & 0xFF000000)>>24) == 3)
             opB = get_valor_mem(opB,mv);
 
         //en el otro caso no modifico al opB ya que seria un inmediato que es valor que ya almacena
 
+    printf("EJECUTANDO INSTRUCCION: %d, OPERANDO A: %d,OPERANDO B: %d \n", mv->registros[OPC], opA, opB);
     instruction_handler(opA,opB,mv->registros[OPC],mv,ToperandoA);
     
 }
+
+
+
+
+
+
+//utilidades -------------------------------------------------------------
+
 void imprimirBinarioCompacto(int n) {
     if (n == 0) {
         printf("0\n");
@@ -735,4 +746,11 @@ void imprimirBinarioCompacto(int n) {
         if (inicio) printf("%d", (n >> i) & 1);
     }
     printf("\n");
+}
+
+void leerBinario(int *entrada) {
+    char buffer[64];  // guardamos el n�mero como string
+    scanf("%63s", buffer);
+    // strtol convierte string a entero, indicando base 2
+    *entrada = (int) strtol(buffer, NULL, 2);
 }

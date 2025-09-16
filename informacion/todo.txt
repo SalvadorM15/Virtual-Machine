@@ -1,5 +1,5 @@
--modificar el leer arch para cualquier nombre de archivo
--crear una funcion que lea solo la cabecera y devuelva la cantidad de bytes del codigo
+-verificar el mal funcionamiento del sys
+-verificar el funcionamiento del acceso a memoria
 
 
 
