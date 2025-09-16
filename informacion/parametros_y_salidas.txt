@@ -1,0 +1,216 @@
+lectura_arch:
+	
+	Recibe:
+		- direccion de memoria de la maquina virtual (generará modificaciones dentro de ella)
+		- nombre del archivo a leer (programa en codigo maquina .vmx)
+
+	Devuelve:
+		- Tamaño del code segment
+
+iniciaMV:
+
+	Recibe:
+		- direccion de memoria de la maquina virtual
+		- Tamaño del code segment
+
+	Devuelve:
+		- En la maquina virtual inicializa la tabla de segmentos, los registros CS, DS, IP
+
+
+error_handler:
+
+	Recibe:
+		- Numero de error detectado
+
+	Salida:
+		- Ninguna (Corta la ejecucion)
+
+instruction_handler:
+
+	Recibe:
+		- Valor del operando A (sin tipo de operando)
+		- Valor del operando B (sin tipo de operando)
+		- Codigo de operacion
+		- Direccion de memoria de la maquina virtual
+		- Tipo del operando A
+
+	Salida:
+		- Ninguna (En caso de instruccion invalida, se interrumpe la ejecucion)
+
+
+lee_operandos:
+
+	Recibe:
+		- Tipo de operando A
+		- Tipo de operando B
+		- Direccion de memoria de la maquina virtual	
+
+	Salida:
+		- Los registros OP1 y OP2 de la maquina virtual con los valores leidos de la instruccion
+
+procesaOperacion:
+
+	Recibe:
+		- Instruccion con los tipos de operando y el codigo de operacion
+	
+	Salida:
+		- Tipo de operando A
+		- Tipo de operando B
+		- Codigo de operacion
+
+evaluarCC:
+	
+	Recibe:
+		- Resultado de la operacion realizada
+		
+	Salida:
+		- Actualiza el registro CC de la maquina virtual con el valor correspondiente segun los bits N y Z de la ALU
+
+set_valor_mem:
+	
+	Recibe:
+		- 
+
+	Salida:
+		-
+
+get_valor_mem:
+
+	Recibe:
+		-
+
+	Salida:
+		-
+
+get_valor_reg:
+	
+	Recibe:
+		- Numero de registro del cual se desea obtener su valor
+		- Maquina virtual
+
+	Salida:
+		- Valor almacenado en el registro indicado
+
+logical_to_physical:
+	
+	Recibe:
+		- Direccion logica
+		- Tabla de segmentos
+		- Cantidad de bytes que se utilizaran (escritura/lectura) a partir de la direccion fisica, comunmente 4 bytes.
+
+	Salida: 
+		- Direccion fisica
+
+get_logical_dir:
+
+	Recibe: 
+		- Maquina virtual
+		-
+
+	Salida:
+		- Direccion logica
+
+stop:
+	
+	Recibe:
+		- Maquina virtual
+
+	Salida:
+		- Modifica el valor del registro IP a -1
+
+not:
+
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+
+	Salida:
+		-  Si el operando es de tipo registro, guarda en si mismo el complemento del operando bit a bit. Si es de tipo memoria, lo guarda en su respectiva direccion
+
+jnn:
+
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+	Salida:
+		- Ninguna
+
+jnp:
+
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+	Salida:
+		- Ninguna
+
+jnz:
+
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+
+	Salida:
+		- Ninguna
+
+jn:
+	
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+
+	Salida:
+		- Ninguna
+
+jp:
+	
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+	Salida:
+		- Ninguna
+
+jz:
+
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+	Salida:
+		- Ninguna
+
+jmp:
+
+	Recibe:
+		- Operando
+		- Tipo de operando
+		- direccion de memoria de la maquina virtual
+	Salida:
+		- Modifica el registro IP a la direccion solicitada
+
+sys:
+
+	Recibe:
+		- Operando (1 = lectura o 2 = Escritura)
+		- direccion de memoria de la maquina virtual
+
+	Salida:
+		- Si op = 2 Escribe en pantalla
+		- Si op = 1 Almacena la informacion ingresada por el usuario desde la direccion apuntada por EDX
+
+rnd:
+
+	Recibe:
+		- operando A
+		- operando B
+		- direccion de memoria de la maquina virtual
+		- tipo de operando A
+
+	Salida:
+		- Si Toperando == 1 guarda el valor random en el registro indicado
+		- Si Toperando == 3 guarda el valor random en memoria
