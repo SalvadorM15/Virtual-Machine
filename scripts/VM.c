@@ -64,10 +64,9 @@ void div_op(int opa, int opb, MaquinaVirtual *mv, int Toperando){
             mv->registros[AC]=resto;
         }
         else {
-            int v;
             int aux = get_valor_mem(opa,mv);
-            cociente = v/opb;
-            resto = v%opb;
+            cociente = aux/opb;
+            resto = aux%opb;
             set_valor_mem(opa,cociente,mv);
             mv->registros[AC]=resto;
         }
