@@ -105,7 +105,7 @@ get_logical_dir:
 
 	Recibe: 
 		- Maquina virtual
-		-
+		- Operando de tipo memoria
 
 	Salida:
 		- Direccion logica
@@ -214,3 +214,166 @@ rnd:
 	Salida:
 		- Si Toperando == 1 guarda el valor random en el registro indicado
 		- Si Toperando == 3 guarda el valor random en memoria
+
+ldl:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de memoria de la maquina virtual
+		- Tipo de operando A
+	Salida:
+		- Se guarda en opA el resultado: los 2 bytes mas singificativos corresponden al opA y los dos menos significativos al opB
+
+ldh:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de memoria de la maquina virtual
+		- Tipo de operando A
+
+	Salida:
+		- En los dos bytes mas significativos de opA devuelve los 2 bytes menos significativos de opB y los dos menos significativos quedan como estaban
+
+swap:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de memoria de la maquina virtual
+		- Tipo de operando A
+	
+	Salida:
+		- Intercambia los valores de los operandos
+
+xor:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de memoria de la maquina virtual
+		- Tipo de operando A
+	Salida:
+		- Hace un xor bit a bit y lo almacena en el registro OPA (O en la direccion de memoria del operando A)
+
+or:
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de memoria de la maquina virtual
+		- Tipo de operando A
+
+	Salida:
+		- Hace un OR bit a bit y lo guarda en el registro OPA/ direccion de memoria especificada
+
+and:
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la maquina virtual
+		- Tipo de operando A
+
+	Salida:
+		- Ejecuta un and bit a bit y lo almacena en el registro OPA/ la direccion de memoria correspondiente
+sar:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la MV
+		- Tipo de operando A
+
+	Salida:
+		- Devuelve en el registro OPA/ en la direccion de memoria especificada un shift aritmetico (propaga el signo)
+
+shr:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la MV
+		- Tipo de operando A
+
+	Salida:
+		- Devuelve en el registro OPA/ en la direccion de memoria especificada un shift right sin propagar el signo
+
+shl:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la MV
+		- Tipo de operando A
+
+	Salida:
+		- Devuelve en el registro OPA/ en la direccion de memoria especificada un shift left
+
+cmp:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la mv
+		-Tipo de operando A
+
+	Salida:
+		- Almacena en CC el resultado de la resta del valor del OPA y el OPB
+
+div_op:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la mv
+		- Tipo de operando A
+
+	Salida:
+		- Guarda en el operando A el resultado de la division y en AC el resto
+
+mul:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la mv
+		- Tipo de operando A
+
+	Salida:
+		- Devuelve el resultado de la multiplicacion en el operando A
+
+sub:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la mv
+		- Tipo de operando A
+
+	Salida:
+		- Devuelve en opA el resultado de la resta de los valores de ambos operandos
+
+add:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la mv
+		- Tipo de operando A
+
+	Salida:
+		- Devuelve en OPA la suma de ambos operandos
+
+mov:
+
+	Recibe:
+		- Operando A
+		- Operando B
+		- Direccion de la mv
+		- Tipo de operando A
+
+	Salida:
+		- Mueve el valor del OPB al OPA
+
+
+

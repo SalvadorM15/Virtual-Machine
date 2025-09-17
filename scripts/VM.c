@@ -211,7 +211,7 @@ void swap(int opa, int opb, MaquinaVirtual *mv, int Toperando){
 
 void ldh(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     // defino dos variables para construir el valor final del OperandoA
-    int parteB = (opb & 0x0000FFFF) << 16; //utilizo una mascara para obtener los dos bytes menos significativos del OPB
+    int parteB = (opb <<16 ) & 0xFFFF0000; //utilizo una mascara para obtener los dos bytes menos significativos del OPB
     int parteA;
     if (Toperando==1){
         parteA=mv->registros[opa]&0x0000FFFF; //utilizo una mascara para obtener los dos bytes menos significativos del OPa
@@ -385,7 +385,7 @@ void not(int op, MaquinaVirtual *mv, int Toperando){
 
 int get_logical_dir(MaquinaVirtual mv, int operandoM){ //funcion creada para obtener la direccion logica de un operando de memoria
 
-    int segmento = (mv.registros[(operandoM & 0x00FF0000) >> 16]);
+    int segmento = (mv.registros[(operandoM >> 16) & 0x000000FF]);
     int offset = (operandoM & 0x0000FFFF);
     int direccion = segmento + offset ;
 
@@ -394,7 +394,7 @@ int get_logical_dir(MaquinaVirtual mv, int operandoM){ //funcion creada para obt
 
 int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_bytes){ // funcion para pasar una direccion logica a una fisica
     int physical_dir;
-    int segment =((logical_dir & 0xFFFF0000) >> 16);
+    int segment =((logical_dir >> 16) & 0x0000FFFF);
     int segment_limit = seg_table[segment][0] + seg_table[segment][1];
 
     if(segment < MAX){
@@ -724,7 +724,7 @@ void step(MaquinaVirtual *mv){
 
     printf("EJECUTANDO INSTRUCCION: %d, OPERANDO A: %d,OPERANDO B: %d \n", mv->registros[OPC], opA, opB);
     instruction_handler(opA,opB,mv->registros[OPC],mv,ToperandoA);
-    
+
 }
 
 
