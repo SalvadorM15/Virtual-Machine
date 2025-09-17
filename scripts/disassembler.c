@@ -110,15 +110,22 @@ char* identificarRegistro(int op){
 
 void imprimir_operador(int op, int Toperando){
     switch (Toperando){
-    case 1: printf("%s", identificarRegistro(op));
+    case 1: printf("%s", identificarRegistro(op & 0x00FFFFFF));
             break;
-    case 2: printf("%d", op);
+    case 2: printf("%d", op & 0x00FFFFFF);
             break;
     case 3:
+            printf("[%s + %d]", identificarRegistro((op >> 16) & 0x000000FF), (op & 0x0000FFFF)); 
+            break;
     }
 }
-void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB){
-    printf("[%x] %x    | %s", mv->registros[IP],identificarMnemonico(mv->registros[OPC]));
+void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion){
+    printf("[%x]", direccion);
+    printf(" %x", instruccion); //Imprime instruccion y tipos de operandos
+    printf("%x", opA & 0x00FFFFFF); //Imprime operando A
+    printf("%x", opB & 0x00FFFFFF); //Imprime operando B
+    printf("\t|%s", identificarMnemonico(mv->registros[OPC]));
+
     if (ToperandoA>0 && ToperandoB>0){
         imprimir_operador(opA,ToperandoA);
         imprimir_operador(opB,ToperandoB);
@@ -131,6 +138,22 @@ void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int
 }
 
 //extraido del codigo del step
+/*
 if (flag_disassembler){
         escribirInstruccion(mv, instruccion, opA,opB,ToperandoA,ToperandoB);
+}
+*/
+
+
+void disassembler(MaquinaVirtual *mv, short int tamSeg){
+    int ToperandoA,ToperandoB,operacion;
+
+    while (mv->registros[IP] < tamSeg){
+        char instruccion = mv->ram[mv->registros[IP]];
+        int dir = mv->registros[IP];
+        procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
+        lee_operandos(ToperandoA,ToperandoB,mv); // lee los siguientes bytes de los operandos A y B y mueve el ip
+        escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir);
+        printf("\n");
     }
+}
