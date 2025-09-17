@@ -23,7 +23,7 @@ void main(int argC, char *argV[]){
         //disassembler
     }
 
-
+    printf("tamanio del codigo: %d \n", tamSeg);
     do{
         step(&mv);
     }while(mv.registros[IP] > -1 && mv.registros[IP]<tamSeg);

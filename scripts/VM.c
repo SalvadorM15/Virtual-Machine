@@ -258,7 +258,7 @@ int cantCeldas = (mv->registros[ECX] & 0x0000FFFF);
 int tamanioCelda = ((mv->registros[ECX] >> 16) & 0x0000FFFF);
 int direccionInicial = mv->registros[EDX]; // obtengo la direccion logica inicial
 direccionInicial = logical_to_physical(direccionInicial, mv->seg, tamanioCelda*cantCeldas); // obtengo la direccion fisica inicial
-if (direccionInicial+cantCeldas*tamanioCelda>MEM){ // evaluo si me voy a quedar sin memoria
+if (direccionInicial+cantCeldas*tamanioCelda>MEM || direccionInicial == -1){ // evaluo si me voy a quedar sin memoria
     error_handler(SEGFAULT);
     return;
 }
@@ -283,31 +283,35 @@ else {
                 case 0: scanf("%d" , &entrada);
                         break;
                 }
-                for (int n=0; n < tamanioCelda; n++){
-                    mv->ram[i+n] = ((entrada >> 8*n)) & 0xFF; // empaqueto byte por byte el dato de entrada;
+
+                for(int n=0; n<tamanioCelda;n++){
+                    mv->ram[i+n] = ((entrada >> (24-(n*8))) & 0xFF);
                 }
             }
             else {
                 int salida = 0;
-                for (int n=0; n<tamanioCelda; n++)
-                    salida |= ((int)mv->ram[i+n]) << (8*n); // rearmo el dato de salida, que estaba previamente guardado byte por byte
+                // rearmo el dato de salida, que estaba previamente guardado byte por byte   
+                for(int n=0; n<tamanioCelda;n++){
+                    salida += ((mv->ram[i+n] << (24-(n*8))));
+                } 
+                
                 switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
                 case 4: imprimirBinarioCompacto(salida);
                         break;
-                case 3: printf("%x \n", salida);
+                case 3: printf("salida: %x \n", salida);
                         break;
-                case 2: printf("%o \n", salida);
+                case 2: printf("salida: %o \n", salida);
                         break;
                 case 1: {
                         unsigned char ch =(salida & 0xFF);
                         if (ch>=32 && ch<=126) // evaluo si es caracter imprimible
-                            printf("%c \n" , ch);
+                            printf("salida: %c \n" , ch);
                             else
                                 printf(". \n");
-                        printf("%c \n", salida);
+                        printf("salida: %c \n", salida);
                         break;
                 }
-                case 0: printf("%d \n", salida);
+                case 0: printf("salida: %d \n", salida);
                         break;
                 }
             }
@@ -318,8 +322,12 @@ void jmp(int op, MaquinaVirtual *mv, int Toperando){
     int dir;
     if (Toperando == 1)
         dir = mv->registros[op];
-    else
-        dir = get_valor_mem(op,mv);
+    else{
+        if ((Toperando == 3))
+             dir = get_valor_mem(op,mv);
+        else
+            dir = op; // es un inmediato   
+    }     
     mv->registros[IP]=dir;
 }
 
@@ -396,7 +404,6 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
     int physical_dir;
     int segment =((logical_dir >> 16) & 0x0000FFFF);
     int segment_limit = seg_table[segment][0] + seg_table[segment][1];
-
     if(segment < MAX){
         physical_dir = seg_table[segment][0];
         physical_dir += (logical_dir & 0x0000FFFF);
@@ -404,8 +411,7 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
             physical_dir = -1;
     }
     else
-    physical_dir = -1;
-
+        physical_dir = -1;
 
     return physical_dir;
 }
@@ -439,16 +445,14 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
 
 void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
     // busco la direccion logica
-
+    int aux=0;
     mv->registros[LAR] = get_logical_dir(*mv, operandoM);
     mv->registros[MBR] = valor;
-
     // paso la direccion logica a fisica
 
     int direccion = logical_to_physical(mv->registros[LAR] , mv->seg , 4);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
     mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
-
 
     if(direccion == -1){
         error_handler(SEGFAULT);
@@ -462,8 +466,12 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
         mv->ram[direccion + 2] = (valor >> 8)  & 0xFF;
         // 4to byte:
         mv->ram[direccion + 3] = valor & 0xFF;
-
+        
+        for(int i = 0; i < 4; i++){
+            aux |= (mv->ram[direccion + i] << (8 * (3 - i)));
+        }
     }
+
 }
 
 void evaluarCC(int res, MaquinaVirtual *mv){
@@ -638,7 +646,7 @@ void error_handler(int error){
 
 void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
     FILE *arch;
-    char num;
+    char num,version;
     int i;
 
     arch = fopen(nombre_arch, "rb");
@@ -647,16 +655,21 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
         //lee los primero 5 bytes de la cabecera
         fread(&num, sizeof(char), 1, arch);
         i = 0;
-        while(!feof(arch) && i<5){
+        while(!feof(arch) && i<4){
             printf("%c", num);
             fread(&num, sizeof(char), 1, arch);
             i++;
         }
+        //leo un byte de la version
+        fread(&version, sizeof(char), 1, arch);
+        printf("\nVersion: %d\n", version);
         //lee el tamanio del segmento de codigo
         printf("\n");
         if(!feof(arch)){
             fread(tamSeg, sizeof(short int), 1, arch);
+            (*tamSeg) = ((*tamSeg >> 8) & 0x00FF) | ((*tamSeg << 8) & 0xFF00);
         }
+        printf("Tamanio del segmento de codigo: %d \n", *tamSeg);
         //comienza la lectura del codigo y lo almacena en la ram
         i = 0;
         if(!feof(arch)){
@@ -665,10 +678,6 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
                 (mv->ram)[i] = num;
                 i++;
                 fread(&num, sizeof(char), 1, arch);
-            }
-
-            if(i == *tamSeg){
-                error_handler(SEGFAULT);
             }
         }
         printf("Se leyeron %d bytes de codigo\n", i);
@@ -681,8 +690,8 @@ void iniciaMV(MaquinaVirtual *mv, int codSize){ // codsize leido de la cabecera
 
     //inicio la tabla de segmentos
     mv->seg[0][0] = 0;
-    mv->seg[0][1] = codSize;
-    mv->seg[1][0] = codSize+1;
+    mv->seg[0][1] = codSize-1;
+    mv->seg[1][0] = codSize;
     mv->seg[1][1] = MEM-1;
 
     //inicializo los registros de segmento
@@ -721,7 +730,7 @@ void step(MaquinaVirtual *mv){
             opB = get_valor_mem(opB,mv);
 
         //en el otro caso no modifico al opB ya que seria un inmediato que es valor que ya almacena
-
+    printf("[%d] ", mv->registros[IP]); 
     printf("EJECUTANDO INSTRUCCION: %d, OPERANDO A: %d,OPERANDO B: %d \n", mv->registros[OPC], opA, opB);
     instruction_handler(opA,opB,mv->registros[OPC],mv,ToperandoA);
 
