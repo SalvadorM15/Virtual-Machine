@@ -120,15 +120,16 @@ void imprimir_operador(int op, int Toperando){
             break;
     }
 }
-void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion){
+void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion, int operacion){
     printf("[%x]", direccion);
     printf(" %x", instruccion); //Imprime instruccion y tipos de operandos
-    printf("\t|%s", identificarMnemonico(mv->registros[OPC]));
-    printf("\t%x", opA & 0x00FFFFFF); //Imprime operando A
-    printf("\t%x", opB & 0x00FFFFFF); //Imprime operando B
+    printf("\t|%s", identificarMnemonico(operacion));
+    printf("\t");
+
 
     if (ToperandoA>0 && ToperandoB>0){
         imprimir_operador(opA,ToperandoA);
+        printf("\t");
         imprimir_operador(opB,ToperandoB);
     }
     else
@@ -169,12 +170,12 @@ if (flag_disassembler){
 void disassembler(MaquinaVirtual *mv, short int tamSeg){
     int ToperandoA,ToperandoB,operacion, ip;
     ip = mv->registros[IP];
-    while (ip < tamSeg){
+    while (ip < tamSeg && operacion != STOP){
         char instruccion = mv->ram[ip];
         int dir = ip;
         procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
         lee_operandos2(ToperandoA,ToperandoB,mv, &ip); // lee los siguientes bytes de los operandos A y B y mueve el ip
-        escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir);
+        escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir, operacion);
         printf("\n");
     }
 }
