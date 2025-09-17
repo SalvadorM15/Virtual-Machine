@@ -757,6 +757,7 @@ void imprimirBinarioCompacto(int n) {
     printf("\n");
 }
 
+
 void leerBinario(int *entrada) {
     char buffer[64];  // guardamos el n�mero como string
     scanf("%63s", buffer);

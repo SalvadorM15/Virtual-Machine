@@ -20,7 +20,7 @@ void main(int argC, char *argV[]){
     iniciaMV(&mv,tamSeg);
 
     if(argC == 3 && strcmp(argV[2],"-d") == 0){
-        //disassembler
+        disassembler(&mv, tamSeg);
     }
 
     printf("tamanio del codigo: %d \n", tamSeg);

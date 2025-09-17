@@ -113,4 +113,4 @@ void error_handler(int error);
 void lectura_arch(MaquinaVirtual *mv, short int *tamseg, char nombre_arch[]);
 void iniciaMV(MaquinaVirtual *mv, int codSize);
 void step(MaquinaVirtual *mv);
-
+void leerBinario(int *entrada);

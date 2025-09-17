@@ -6,7 +6,7 @@
 
 
 
-char* identificarMnemonico(int codigo){
+const char* identificarMnemonico(int codigo){
     switch (codigo){
     case SYS: return "SYS";
             break;
@@ -65,6 +65,7 @@ char* identificarMnemonico(int codigo){
     }
 }
 
+const 
 char* identificarRegistro(int op){
     switch (op){
     case LAR: return "LAR";
@@ -110,17 +111,25 @@ char* identificarRegistro(int op){
 
 void imprimir_operador(int op, int Toperando){
     switch (Toperando){
-    case 1: printf("%s", identificarRegistro(op));
+    case 1: printf("%s", identificarRegistro(op & 0x00FFFFFF));
             break;
-    case 2: printf("%d", op);
+    case 2: printf("%d", op & 0x00FFFFFF);
             break;
     case 3:
+            printf("[%s + %d]", identificarRegistro((op >> 16) & 0x000000FF), (op & 0x0000FFFF)); 
+            break;
     }
 }
-void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB){
-    printf("[%x] %x    | %s", mv->registros[IP],identificarMnemonico(mv->registros[OPC]));
+void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion, int operacion){
+    printf("[%x]", direccion);
+    printf(" %x", instruccion); //Imprime instruccion y tipos de operandos
+    printf("\t|%s", identificarMnemonico(operacion));
+    printf("\t");
+
+
     if (ToperandoA>0 && ToperandoB>0){
         imprimir_operador(opA,ToperandoA);
+        printf("\t");
         imprimir_operador(opB,ToperandoB);
     }
     else
@@ -130,7 +139,43 @@ void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int
 
 }
 
+void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip){
+    int i;
+    mv->registros[OP1] = 0;
+    mv->registros[OP2] = 0;
+    for(i = ((*ip)+1); i < ((*ip) + topB+1); i++){
+        mv->registros[OP2] = mv->registros[OP2] << 8;
+        mv->registros[OP2] += mv->ram[i];
+    }
+    (*ip) += topB;
+
+    for(i = ((*ip)+1); i < ((*ip) + topA+1); i++){
+        mv->registros[OP1] = mv->registros[OP1] << 8;
+        mv->registros[OP1] += mv->ram[i];
+    }
+    (*ip) += topA;
+    (*ip)++; // avanzo el ip al proximo byte de instruccion porque sino queda en el ultimo operando
+    //agrego el tipo de operando en el byte mas significativo
+    mv->registros[OP1] += (topA << 24);
+    mv->registros[OP2] += (topB << 24);
+}
 //extraido del codigo del step
+/*
 if (flag_disassembler){
         escribirInstruccion(mv, instruccion, opA,opB,ToperandoA,ToperandoB);
+}
+*/
+
+
+void disassembler(MaquinaVirtual *mv, short int tamSeg){
+    int ToperandoA,ToperandoB,operacion, ip;
+    ip = mv->registros[IP];
+    while (ip < tamSeg && operacion != STOP){
+        char instruccion = mv->ram[ip];
+        int dir = ip;
+        procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
+        lee_operandos2(ToperandoA,ToperandoB,mv, &ip); // lee los siguientes bytes de los operandos A y B y mueve el ip
+        escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir, operacion);
+        printf("\n");
     }
+}
