@@ -6,7 +6,7 @@
 
 
 
-char* identificarMnemonico(int codigo){
+const char* identificarMnemonico(int codigo){
     switch (codigo){
     case SYS: return "SYS";
             break;
@@ -65,6 +65,7 @@ char* identificarMnemonico(int codigo){
     }
 }
 
+const 
 char* identificarRegistro(int op){
     switch (op){
     case LAR: return "LAR";
@@ -137,6 +138,26 @@ void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int
 
 }
 
+void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip){
+    int i;
+    mv->registros[OP1] = 0;
+    mv->registros[OP2] = 0;
+    for(i = ((*ip)+1); i < ((*ip) + topB+1); i++){
+        mv->registros[OP2] = mv->registros[OP2] << 8;
+        mv->registros[OP2] += mv->ram[i];
+    }
+    (*ip) += topB;
+
+    for(i = ((*ip)+1); i < ((*ip) + topA+1); i++){
+        mv->registros[OP1] = mv->registros[OP1] << 8;
+        mv->registros[OP1] += mv->ram[i];
+    }
+    (*ip) += topA;
+    (*ip)++; // avanzo el ip al proximo byte de instruccion porque sino queda en el ultimo operando
+    //agrego el tipo de operando en el byte mas significativo
+    mv->registros[OP1] += (topA << 24);
+    mv->registros[OP2] += (topB << 24);
+}
 //extraido del codigo del step
 /*
 if (flag_disassembler){
@@ -146,13 +167,13 @@ if (flag_disassembler){
 
 
 void disassembler(MaquinaVirtual *mv, short int tamSeg){
-    int ToperandoA,ToperandoB,operacion;
-
-    while (mv->registros[IP] < tamSeg){
-        char instruccion = mv->ram[mv->registros[IP]];
-        int dir = mv->registros[IP];
+    int ToperandoA,ToperandoB,operacion, ip;
+    ip = mv->registros[IP];
+    while (ip < tamSeg){
+        char instruccion = mv->ram[ip];
+        int dir = ip;
         procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
-        lee_operandos(ToperandoA,ToperandoB,mv); // lee los siguientes bytes de los operandos A y B y mueve el ip
+        lee_operandos2(ToperandoA,ToperandoB,mv, &ip); // lee los siguientes bytes de los operandos A y B y mueve el ip
         escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir);
         printf("\n");
     }
