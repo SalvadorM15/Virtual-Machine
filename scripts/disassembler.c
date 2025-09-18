@@ -2,7 +2,7 @@
 #include "VM.h"
 #include<stdlib.h>
 #include <string.h>
-
+#include "disassembler.h"
 
 
 
@@ -65,8 +65,7 @@ const char* identificarMnemonico(int codigo){
     }
 }
 
-const 
-char* identificarRegistro(int op){
+const char* identificarRegistro(int op){
     switch (op){
     case LAR: return "LAR";
               break;

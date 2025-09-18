@@ -3,6 +3,7 @@
 #include <time.h>
 #include <string.h>
 #include "VM.h"
+#include "disassembler.h"
 #define SIZE 30
 
 
