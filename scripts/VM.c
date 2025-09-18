@@ -83,9 +83,11 @@ void cmp(int opa, int opb, MaquinaVirtual *mv, int Toperando){
     int res;
     if (Toperando == 1){
         res = mv->registros[opa]-opb;
+        printf("comparo los valores: %d y %d \n", mv->registros[opa], opb);
     }
     else {
         int aux = get_valor_mem(opa,mv);
+        printf("comparo los valores: %d y %d \n", aux, opb);
         res = aux - opb;
     }
     evaluarCC(res, mv);
@@ -282,7 +284,8 @@ else {
                 case 0: scanf("%d" , &entrada);
                         break;
                 }
-
+                printf("voy a escribir: %d \n", entrada);
+                printf("en la direccion fisica: %d \n", i);
                 for(int n=0; n<tamanioCelda;n++){
                     mv->ram[i+n] = ((entrada >> (24-(n*8))) & 0xFF);
                 }
@@ -293,7 +296,8 @@ else {
                 for(int n=0; n<tamanioCelda;n++){
                     salida += ((mv->ram[i+n] << (24-(n*8))));
                 } 
-                
+                printf("voy a sacar: %d \n", salida);
+                printf("de la direccion fisica: %d \n", i);
                 switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
                 case 4: imprimirBinarioCompacto(salida);
                         break;
@@ -340,19 +344,19 @@ void jp(int op, MaquinaVirtual *mv, int Toperando){
         jmp(op,mv,Toperando);
 }
 void jn_op(int op, MaquinaVirtual *mv, int Toperando){
-    if ((mv->registros[CC] & 0x02) != 0)
+    if ((mv->registros[CC] == 0x02))
         jmp(op,mv,Toperando);
 }
 void jnz(int op, MaquinaVirtual *mv, int Toperando){
-    if ((mv->registros[CC] & 0x01) == 0)
+    if ((mv->registros[CC] != 0x01))
         jmp(op,mv,Toperando);
 }
 void jnp(int op, MaquinaVirtual *mv, int Toperando){
-    if ((mv->registros[CC] & 0x03)!=0)
+    if ((mv->registros[CC] != 0x00))
         jmp(op,mv,Toperando);
 }
 void jnn(int op, MaquinaVirtual *mv, int Toperando){
-    if ((mv->registros[CC] & 0x02)==0)
+    if ((mv->registros[CC] != 0x02))
         jmp(op,mv,Toperando);
 }
 void not(int op, MaquinaVirtual *mv, int Toperando){
@@ -476,11 +480,14 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 void evaluarCC(int res, MaquinaVirtual *mv){
     int valor = 0;
     if (res==0)
-        valor |= (0x01);
+        valor = (0x01);
         else {
             if (res<0)
-                valor |= (0x02);
+                valor = (0x02);
+            else{
+            valor = 0x00;
         }
+    }
     mv->registros[CC]=valor;
 
 }
@@ -654,14 +661,12 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
         //lee los primero 5 bytes de la cabecera
         fread(&num, sizeof(char), 1, arch);
         i = 0;
-        while(!feof(arch) && i<4){
+        while(!feof(arch) && i<5){
             printf("%c", num);
             fread(&num, sizeof(char), 1, arch);
             i++;
         }
-        //leo un byte de la version
-        fread(&version, sizeof(char), 1, arch);
-        printf("\nVersion: %d\n", version);
+        //leo un byte de la versio
         //lee el tamanio del segmento de codigo
         printf("\n");
         if(!feof(arch)){
@@ -729,8 +734,6 @@ void step(MaquinaVirtual *mv){
             opB = get_valor_mem(opB,mv);
 
         //en el otro caso no modifico al opB ya que seria un inmediato que es valor que ya almacena
-    printf("[%d] ", mv->registros[IP]); 
-    printf("EJECUTANDO INSTRUCCION: %d, OPERANDO A: %d,OPERANDO B: %d \n", mv->registros[OPC], opA, opB);
     instruction_handler(opA,opB,mv->registros[OPC],mv,ToperandoA);
 
 }

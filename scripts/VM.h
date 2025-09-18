@@ -114,3 +114,10 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamseg, char nombre_arch[]);
 void iniciaMV(MaquinaVirtual *mv, int codSize);
 void step(MaquinaVirtual *mv);
 void leerBinario(int *entrada);
+
+const char* identificarMnemonico(int codigo);
+const char* identificarRegistro(int codigo);
+void imprimir_operador(int op, int Toperando);
+void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion, int operacion);
+void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip);
+void disassembler(MaquinaVirtual *mv, short int tamSeg);

@@ -1,9 +1,7 @@
 #include<stdio.h>
-#include "VM.h"
 #include<stdlib.h>
 #include <string.h>
-#include "disassembler.h"
-
+#include "VM.h"
 
 
 const char* identificarMnemonico(int codigo){
