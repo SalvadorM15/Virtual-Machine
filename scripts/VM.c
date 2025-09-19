@@ -159,13 +159,14 @@ void rnd(int opa, int opb, MaquinaVirtual *mv){
 //instrucciones de 1 operando
 
 void sys(int op, MaquinaVirtual *mv){
+
     int cantCeldas = (mv->registros[ECX] & 0x0000FFFF);
     int tamanioCelda = ((mv->registros[ECX] >> 16) & 0x0000FFFF);
     int direccionInicial = mv->registros[EDX]; // obtengo la direccion logica inicial
     printf("direcccion logica inicial: %d \n", direccionInicial);
     direccionInicial = logical_to_physical(direccionInicial, mv->seg, tamanioCelda*cantCeldas); // obtengo la direccion fisica inicial
     printf("direccion inicial fisica: %d \n", direccionInicial);
-    if (direccionInicial+cantCeldas*tamanioCelda>MEM || direccionInicial == -1){ // evaluo si me voy a quedar sin memoria
+    if ( direccionInicial == -1){ // evaluo si me voy a quedar sin memoria
         error_handler(SEGFAULT);
         return;
     }
@@ -201,7 +202,7 @@ void sys(int op, MaquinaVirtual *mv){
                         unsigned int salida = 0;
                         // rearmo el dato de salida, que estaba previamente guardado byte por byte   
                         for(int n=0; n<tamanioCelda;n++){
-                            salida |= ((mv->ram[i+n] << (24-(n*8))));
+                            salida |= (unsigned int)((mv->ram[i+n] << (24-(n*8))));
                         } 
                         printf("voy a sacar: %d \n", salida);
                         printf("de la direccion fisica: %d \n", i);
@@ -619,11 +620,11 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
 
     if((operando & 0xFF000000)>>24 == 1 ){
-        mv->registros[(operando & 0x00FFFFFF)] = valor;
+        mv->registros[(operando & 0x00FFFFFF)] = (unsigned int)valor;
     }
     else{ 
         if((operando & 0xFF000000)>>24 == 3){
-            set_valor_mem((operando & 0x00FFFFFF), valor, mv);
+            set_valor_mem((operando & 0x00FFFFFF), (unsigned int)valor, mv);
         }
         else{
             // Error: intento asignar a un inmediato
@@ -681,7 +682,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
     mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
-    if(direccion == -1){
+    if(direccion == -1 || (direccion + 4) > MEM){
         error_handler(SEGFAULT);
     }
     else{
