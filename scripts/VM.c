@@ -19,7 +19,6 @@ void mov(int opa , int opb , MaquinaVirtual *mv){
 void add(int opa, int opb, MaquinaVirtual *mv){
 
      int valorOPB = get_valor_operando(opb,mv);
-    int res;
     set_valor_operando(opa,get_valor_operando(opa,mv)+valorOPB,mv);
     evaluarCC(get_valor_operando(opa,mv),mv);
 }
@@ -27,7 +26,10 @@ void add(int opa, int opb, MaquinaVirtual *mv){
 
 void sub(int opa , int opb, MaquinaVirtual *mv){
 
-    add(opa,-1*opb,mv); // es lo mismo que sumar el negado
+   int  valorOPB = get_valor_operando(opb,mv);
+    set_valor_operando(opa,get_valor_operando(opa,mv)-valorOPB,mv);
+    evaluarCC(get_valor_operando(opa,mv),mv);
+
 
 }
 
@@ -196,23 +198,27 @@ void sys(int op, MaquinaVirtual *mv){
                     default: error_handler(INVINS);
                              break;
                     }
-                        
+                    // 1er byte:
+                    mv->ram[i]     = (entrada >> 24) & 0x000000FF;
+                    // 2do byte:
+                    mv->ram[i + 1] = (entrada >> 16) & 0x000000FF;
+                    // 3er byte:
+                    mv->ram[i + 2] = (entrada>> 8)  & 0x000000FF;
+                    // 4to byte:
+                    mv->ram[i + 3] = entrada & 0x000000FF;
                     printf("voy a escribir: %d \n", entrada);
                     printf("en la direccion fisica: %d \n", i);
-                    for(int n=0; n<tamanioCelda;n++){
-                        mv->ram[i+n] = ((entrada >> (24-(n*8))) & 0xFF);
-                    }
+                    
                 }
                 else {
                     if(get_valor_operando(op,mv) == 2){
                         int salida = 0;
+                        printf("valor de eax: %d \n", mv->registros[EAX]);
                         // rearmo el dato de salida, que estaba previamente guardado byte por byte   
-                        for(int n=0; n<tamanioCelda;n++){
-                            salida |= (unsigned int)((mv->ram[i+n] << (24-(n*8))));
-                        } 
-                        printf("voy a sacar: %d \n", salida);
+                       salida = (((mv->ram[i] << 24)&0xFF000000) | ((mv->ram[i + 1] << 16)&0x00FF0000) |  ((mv->ram[i + 2] << 8)&0x00000FF00) | ((mv->ram[i + 3]&0x000000FF)));
+                        printf("voy a sacar: %u \n", salida);
                         printf("de la direccion fisica: %d \n", i);
-                        switch (mv->registros[EDX]){ // evaluo el tipo de dato de salida
+                        switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
                         case 16: imprimirBinarioCompacto(salida);
                                 break;
                         case 8: printf("salida: %x \n", salida);
@@ -228,7 +234,7 @@ void sys(int op, MaquinaVirtual *mv){
                                 printf("salida: %c \n", salida);
                                 break;
                         }
-                        case 1: printf("salida: %d \n", salida);
+                        case 1: imprimirBinarioCompacto(salida);
                                 break;
                         }
                     }
@@ -585,13 +591,12 @@ void evaluarCC(int res, MaquinaVirtual *mv){
     int valor = 0;
     if (res==0)
         valor = (0x01);
-        else {
+        else 
             if (res<0)
                 valor = (0x02);
-            else{
+            else
             valor = 0x00;
-        }
-    }
+    
     mv->registros[CC]=valor;
 
 }
@@ -644,7 +649,7 @@ void inicioRam(MaquinaVirtual *mv){
 
 //------------------------------------GETTERS Y SETTERS DE OPERANDOS--------------------------------------------------------------------------------
 
-void set_valor_operando(int operando, unsigned int valor, MaquinaVirtual *mv){
+void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
 
     if((operando & 0xFF000000)>>24 == 1 ){
         mv->registros[(operando & 0x00FFFFFF)] = valor;
@@ -693,12 +698,12 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
         return -1;
     }
     else{
-        mv->registros[MBR] = ((mv->ram[direccion] << 24) | (mv->ram[direccion + 1] << 16) |  (mv->ram[direccion + 2] << 8) | (mv->ram[direccion + 3]));
+        mv->registros[MBR] = (((mv->ram[direccion] << 24)&0xFF000000) | ((mv->ram[direccion + 1] << 16)&0x00FF0000) |  ((mv->ram[direccion + 2] << 8)&0x00000FF00) | ((mv->ram[direccion + 3]&0x000000FF)));
         return mv->registros[MBR];
     }
 }
 
-void set_valor_mem(int operandoM, unsigned int valor, MaquinaVirtual *mv){
+void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
     // busco la direccion logica
     int aux=0;
     mv->registros[LAR] = get_logical_dir(*mv, operandoM);
@@ -714,13 +719,13 @@ void set_valor_mem(int operandoM, unsigned int valor, MaquinaVirtual *mv){
     }
     else{
         // 1er byte:
-        mv->ram[direccion]     = (valor >> 24) & 0xFF;
+        mv->ram[direccion]     = (valor >> 24) & 0x000000FF;
         // 2do byte:
-        mv->ram[direccion + 1] = (valor >> 16) & 0xFF;
+        mv->ram[direccion + 1] = (valor >> 16) & 0x000000FF;
         // 3er byte:
-        mv->ram[direccion + 2] = (valor >> 8)  & 0xFF;
+        mv->ram[direccion + 2] = (valor >> 8)  & 0x000000FF;
         // 4to byte:
-        mv->ram[direccion + 3] = valor & 0xFF;
+        mv->ram[direccion + 3] = valor & 0x000000FF;
     }
 }
 

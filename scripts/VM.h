@@ -99,7 +99,7 @@ int get_logical_dir(MaquinaVirtual mv, int operandoM);
 int logical_to_physical(int logical_dir, short int seg_table[MAX][2], int cant_bytes);
 int get_valor_mem(int operandoM, MaquinaVirtual *mv);
 
-void set_valor_mem(int operandoM, unsigned int valor, MaquinaVirtual *mv);
+void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv);
 void evaluarCC(int res, MaquinaVirtual *mv);
 
 void procesaOperacion(char instruccion, int *topA, int *topB, int *op);
@@ -122,5 +122,5 @@ void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int
 void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip);
 void disassembler(MaquinaVirtual *mv, short int tamSeg);
 
-void set_valor_operando(int operando, unsigned int valor, MaquinaVirtual *mv);
+void set_valor_operando(int operando, int valor, MaquinaVirtual *mv);
 int get_valor_operando(int operando, MaquinaVirtual *mv);
