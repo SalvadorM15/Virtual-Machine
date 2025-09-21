@@ -15,7 +15,6 @@ void main(int argC, char *argV[]){
     srand(time(NULL));
     
     strcpy(fileName,argV[1]);
-
     lectura_arch(&mv, &tamSeg,fileName);
     iniciaMV(&mv,tamSeg);
 

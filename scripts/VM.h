@@ -70,36 +70,36 @@ typedef struct{
 
 //prototipos VM.C
 
-void mov(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void add(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void sub(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void mul(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void div_op(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void cmp(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void shl(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void shr(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void and(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void or(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void xor(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void swap(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void ldh(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void ldl(int opa, int opb, MaquinaVirtual *mv, int Toperando);
-void rnd(int opa, int opb, MaquinaVirtual *mv, int Toperando);
+void mov(int opa, int opb, MaquinaVirtual *mv);
+void add(int opa, int opb, MaquinaVirtual *mv);
+void sub(int opa, int opb, MaquinaVirtual *mv);
+void mul(int opa, int opb, MaquinaVirtual *mv);
+void div_op(int opa, int opb, MaquinaVirtual *mv);
+void cmp(int opa, int opb, MaquinaVirtual *mv);
+void shl(int opa, int opb, MaquinaVirtual *mv);
+void shr(int opa, int opb, MaquinaVirtual *mv);
+void and(int opa, int opb, MaquinaVirtual *mv);
+void or(int opa, int opb, MaquinaVirtual *mv);
+void xor(int opa, int opb, MaquinaVirtual *mv);
+void swap(int opa, int opb, MaquinaVirtual *mv);
+void ldh(int opa, int opb, MaquinaVirtual *mv);
+void ldl(int opa, int opb, MaquinaVirtual *mv);
+void rnd(int opa, int opb, MaquinaVirtual *mv);
 
-void jmp(int op, MaquinaVirtual *mv, int Toperando);
-void jz(int op, MaquinaVirtual *mv, int Toperando);
-void jp(int op, MaquinaVirtual *mv, int Toperando);
-void jnz(int op, MaquinaVirtual *mv, int Toperando);
-void jnp(int op, MaquinaVirtual *mv, int Toperando);
-void jnn(int op, MaquinaVirtual *mv, int Toperando);
-void not(int op, MaquinaVirtual *mv, int Toperando);
-void jn_op(int op, MaquinaVirtual *mv, int Toperando);
+void jmp(int op, MaquinaVirtual *mv);
+void jz(int op, MaquinaVirtual *mv);
+void jp(int op, MaquinaVirtual *mv);
+void jnz(int op, MaquinaVirtual *mv);
+void jnp(int op, MaquinaVirtual *mv);
+void jnn(int op, MaquinaVirtual *mv);
+void not(int op, MaquinaVirtual *mv);
+void jn_op(int op, MaquinaVirtual *mv);
 
 int get_logical_dir(MaquinaVirtual mv, int operandoM);
 int logical_to_physical(int logical_dir, short int seg_table[MAX][2], int cant_bytes);
 int get_valor_mem(int operandoM, MaquinaVirtual *mv);
 
-void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv);
+void set_valor_mem(int operandoM, unsigned int valor, MaquinaVirtual *mv);
 void evaluarCC(int res, MaquinaVirtual *mv);
 
 void procesaOperacion(char instruccion, int *topA, int *topB, int *op);
@@ -107,7 +107,7 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv);
 
 void imprimirBinarioCompacto(int n);
 
-void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv, int ToperandoA);
+void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv);
 void error_handler(int error);
 
 void lectura_arch(MaquinaVirtual *mv, short int *tamseg, char nombre_arch[]);
@@ -121,3 +121,6 @@ void imprimir_operador(int op, int Toperando);
 void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion, int operacion);
 void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip);
 void disassembler(MaquinaVirtual *mv, short int tamSeg);
+
+void set_valor_operando(int operando, unsigned int valor, MaquinaVirtual *mv);
+int get_valor_operando(int operando, MaquinaVirtual *mv);

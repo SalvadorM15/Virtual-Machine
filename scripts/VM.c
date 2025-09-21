@@ -12,7 +12,7 @@
 
 void mov(int opa , int opb , MaquinaVirtual *mv){
 
-    int valorOPB = get_valor_operando(valorOPB,mv);
+    int valorOPB = get_valor_operando(opb,mv);
     set_valor_operando(opa,valorOPB,mv);
 }
 
@@ -61,10 +61,11 @@ void cmp(int opa, int opb, MaquinaVirtual *mv){
 }
 
 void shl(int opa, int opb, MaquinaVirtual *mv){
-    int aux;
+    unsigned int aux;
     int valorOPB = get_valor_operando(opb,mv);
     if (valorOPB>=0  && valorOPB<32 ) {
-        aux = get_valor_operando(opa,mv) << valorOPB;
+        aux = get_valor_operando(opa,mv);
+        aux = aux << valorOPB;
         printf("valor despues del shl: %u \n", aux);
         set_valor_operando(opa,aux,mv);
     }
@@ -111,8 +112,9 @@ void and(int opa, int opb, MaquinaVirtual *mv){
 
 void or(int opa, int opb, MaquinaVirtual *mv){
     int valorOPB = get_valor_operando(opb,mv);
-    int aux;
-    aux = get_valor_operando(opa,mv) | valorOPB;
+    unsigned int aux;
+    aux = (unsigned int)get_valor_operando(opa,mv);
+    aux = aux | valorOPB;
     printf("valor despues del or: %u \n", aux);
     set_valor_operando(opa,aux,mv);
     evaluarCC(aux,mv);
@@ -176,21 +178,25 @@ void sys(int op, MaquinaVirtual *mv){
                 if (get_valor_operando(op,mv)==1){
                     int entrada=0;
                     switch (mv->registros[EAX]){ // evaluo el tipo de dato de entrada
-                    case 4: leerBinario(&entrada);
+                    case 16: leerBinario(&entrada);
                             break;
-                    case 3: scanf("%x" , &entrada);
+                    case 8: scanf("%x" , &entrada);
                             break;
-                    case 2: scanf("%o", &entrada);
+                    case 4: scanf("%o", &entrada);
                             break;
-                    case 1: {
+                    case 2: {
                             char ch=0;
                             scanf("%c", &ch);
                             entrada=(unsigned char) ch;
                             break;
                     }
-                    case 0: scanf("%d" , &entrada);
+                    case 1: scanf("%d" , &entrada);
+                            printf("escribi\n");
                             break;
+                    default: error_handler(INVINS);
+                             break;
                     }
+                        
                     printf("voy a escribir: %d \n", entrada);
                     printf("en la direccion fisica: %d \n", i);
                     for(int n=0; n<tamanioCelda;n++){
@@ -199,21 +205,21 @@ void sys(int op, MaquinaVirtual *mv){
                 }
                 else {
                     if(get_valor_operando(op,mv) == 2){
-                        unsigned int salida = 0;
+                        int salida = 0;
                         // rearmo el dato de salida, que estaba previamente guardado byte por byte   
                         for(int n=0; n<tamanioCelda;n++){
                             salida |= (unsigned int)((mv->ram[i+n] << (24-(n*8))));
                         } 
                         printf("voy a sacar: %d \n", salida);
                         printf("de la direccion fisica: %d \n", i);
-                        switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
-                        case 4: imprimirBinarioCompacto(salida);
+                        switch (mv->registros[EDX]){ // evaluo el tipo de dato de salida
+                        case 16: imprimirBinarioCompacto(salida);
                                 break;
-                        case 3: printf("salida: %x \n", salida);
+                        case 8: printf("salida: %x \n", salida);
                                 break;
-                        case 2: printf("salida: %o \n", salida);
+                        case 4: printf("salida: %o \n", salida);
                                 break;
-                        case 1: {
+                        case 2: {
                                 unsigned char ch =(salida & 0xFF);
                                 if (ch>=32 && ch<=126) // evaluo si es caracter imprimible
                                     printf("salida: %c \n" , ch);
@@ -222,7 +228,7 @@ void sys(int op, MaquinaVirtual *mv){
                                 printf("salida: %c \n", salida);
                                 break;
                         }
-                        case 0: printf("salida: %u \n", salida);
+                        case 1: printf("salida: %d \n", salida);
                                 break;
                         }
                     }
@@ -234,7 +240,10 @@ void sys(int op, MaquinaVirtual *mv){
 }
 void jmp(int op, MaquinaVirtual *mv){
 
+    printf("nuevo valor: %d",get_valor_operando(op,mv));
+    printf("valor de eax: %d",mv->registros[EAX]);
     mv->registros[IP] =  get_valor_operando(op,mv);
+    printf("salto\n");
 }
 
 void jz(int op, MaquinaVirtual *mv){
@@ -394,7 +403,7 @@ void error_handler(int error){
         printf("ERROR: DIVISION POR 0 NO ESTA PERMITIDA\n");
         break;
     case INVINS:
-        printf("ERROR: INSTRUCCION INVALIDA\n");
+        printf("ERROR: INSTRUCCION INVALIDA:\n");
         break;
     case INVVER:
         printf("ERROR: VERSION INVALIDA\n");
@@ -459,7 +468,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
 }
 
 void iniciaMV(MaquinaVirtual *mv, int codSize){ // codsize leido de la cabecera
-
+    
     //inicio la tabla de segmentos
     mv->seg[0][0] = 0;
     mv->seg[0][1] = codSize-1;
@@ -612,6 +621,12 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
     return physical_dir;
 }
 
+void inicioRam(MaquinaVirtual *mv){
+    for(int i=0; i<MEM; i++){
+        mv->ram[i] = 0;
+    }
+}
+
 //--------------------------------------------------FIN DE UTILIDADES--------------------------------------------------------------
 
 
@@ -629,14 +644,14 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
 
 //------------------------------------GETTERS Y SETTERS DE OPERANDOS--------------------------------------------------------------------------------
 
-void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
+void set_valor_operando(int operando, unsigned int valor, MaquinaVirtual *mv){
 
     if((operando & 0xFF000000)>>24 == 1 ){
-        mv->registros[(operando & 0x00FFFFFF)] = (unsigned int)valor;
+        mv->registros[(operando & 0x00FFFFFF)] = valor;
     }
     else{ 
         if((operando & 0xFF000000)>>24 == 3){
-            set_valor_mem((operando & 0x00FFFFFF), (unsigned int)valor, mv);
+            set_valor_mem((operando & 0x00FFFFFF),valor, mv);
         }
         else{
             // Error: intento asignar a un inmediato
@@ -671,7 +686,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
 
     int direccion = logical_to_physical(mv->registros[LAR], mv->seg , 4);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
-    mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
+    mv->registros[MAR] +=(3<<30); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
     if(direccion == -1){
         error_handler(SEGFAULT);
@@ -683,7 +698,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
     }
 }
 
-void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
+void set_valor_mem(int operandoM, unsigned int valor, MaquinaVirtual *mv){
     // busco la direccion logica
     int aux=0;
     mv->registros[LAR] = get_logical_dir(*mv, operandoM);
@@ -692,7 +707,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 
     int direccion = logical_to_physical(mv->registros[LAR] , mv->seg , 4);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
-    mv->registros[MAR] +=(3<<32); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
+    mv->registros[MAR] +=(3<<30); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
     if(direccion == -1 || (direccion + 4) > MEM){
         error_handler(SEGFAULT);
