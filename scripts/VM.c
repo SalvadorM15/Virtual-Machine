@@ -541,6 +541,12 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
 
 
 
+
+
+
+
+
+
 //----------------------------------------------------------UTILIDADES--------------------------------------------------------------
 
 void imprimirBinarioCompacto(int n) {
@@ -606,6 +612,12 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
 }
 
 //--------------------------------------------------FIN DE UTILIDADES--------------------------------------------------------------
+
+
+
+
+
+
 
 
 
