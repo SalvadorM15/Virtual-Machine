@@ -68,7 +68,6 @@ void shl(int opa, int opb, MaquinaVirtual *mv){
     if (valorOPB>=0  && valorOPB<32 ) {
         aux = get_valor_operando(opa,mv);
         aux = aux << valorOPB;
-        printf("valor despues del shl: %u \n", aux);
         set_valor_operando(opa,aux,mv);
     }
     else {
@@ -114,10 +113,9 @@ void and(int opa, int opb, MaquinaVirtual *mv){
 
 void or(int opa, int opb, MaquinaVirtual *mv){
     int valorOPB = get_valor_operando(opb,mv);
-    unsigned int aux;
-    aux = (unsigned int)get_valor_operando(opa,mv);
+    int aux;
+    aux = get_valor_operando(opa,mv);
     aux = aux | valorOPB;
-    printf("valor despues del or: %u \n", aux);
     set_valor_operando(opa,aux,mv);
     evaluarCC(aux,mv);
 }
@@ -167,9 +165,7 @@ void sys(int op, MaquinaVirtual *mv){
     int cantCeldas = (mv->registros[ECX] & 0x0000FFFF);
     int tamanioCelda = ((mv->registros[ECX] >> 16) & 0x0000FFFF);
     int direccionInicial = mv->registros[EDX]; // obtengo la direccion logica inicial
-    printf("direcccion logica inicial: %d \n", direccionInicial);
     direccionInicial = logical_to_physical(direccionInicial, mv->seg, tamanioCelda*cantCeldas); // obtengo la direccion fisica inicial
-    printf("direccion inicial fisica: %d \n", direccionInicial);
     if ( direccionInicial == -1){ // evaluo si me voy a quedar sin memoria
         error_handler(SEGFAULT);
         return;
@@ -193,7 +189,6 @@ void sys(int op, MaquinaVirtual *mv){
                             break;
                     }
                     case 1: scanf("%d" , &entrada);
-                            printf("escribi\n");
                             break;
                     default: error_handler(INVINS);
                              break;
@@ -206,18 +201,13 @@ void sys(int op, MaquinaVirtual *mv){
                     mv->ram[i + 2] = (entrada>> 8)  & 0x000000FF;
                     // 4to byte:
                     mv->ram[i + 3] = entrada & 0x000000FF;
-                    printf("voy a escribir: %d \n", entrada);
-                    printf("en la direccion fisica: %d \n", i);
                     
                 }
                 else {
                     if(get_valor_operando(op,mv) == 2){
                         int salida = 0;
-                        printf("valor de eax: %d \n", mv->registros[EAX]);
                         // rearmo el dato de salida, que estaba previamente guardado byte por byte   
                        salida = (((mv->ram[i] << 24)&0xFF000000) | ((mv->ram[i + 1] << 16)&0x00FF0000) |  ((mv->ram[i + 2] << 8)&0x00000FF00) | ((mv->ram[i + 3]&0x000000FF)));
-                        printf("voy a sacar: %u \n", salida);
-                        printf("de la direccion fisica: %d \n", i);
                         switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
                         case 16: imprimirBinarioCompacto(salida);
                                 break;
@@ -234,7 +224,7 @@ void sys(int op, MaquinaVirtual *mv){
                                 printf("salida: %c \n", salida);
                                 break;
                         }
-                        case 1: imprimirBinarioCompacto(salida);
+                        case 1: printf("salida: %d \n", salida);
                                 break;
                         }
                     }
@@ -246,10 +236,8 @@ void sys(int op, MaquinaVirtual *mv){
 }
 void jmp(int op, MaquinaVirtual *mv){
 
-    printf("nuevo valor: %d",get_valor_operando(op,mv));
-    printf("valor de eax: %d",mv->registros[EAX]);
+
     mv->registros[IP] =  get_valor_operando(op,mv);
-    printf("salto\n");
 }
 
 void jz(int op, MaquinaVirtual *mv){
@@ -467,7 +455,6 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
                 fread(&num, sizeof(char), 1, arch);
             }
         }
-        printf("Se leyeron %d bytes de codigo\n", i);
         fclose(arch);
     }
 
