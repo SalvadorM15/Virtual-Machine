@@ -49,10 +49,8 @@ void div_op(int opa, int opb, MaquinaVirtual *mv){
         mv->registros[AC]=resto;
         evaluarCC(cociente,mv);
     }
-    else {
-        //DIVISION POR CERO
+    else
         error_handler(DIV0);
-    }
 }
 
 void cmp(int opa, int opb, MaquinaVirtual *mv){
@@ -381,7 +379,6 @@ void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv){ /
             break;
     default:
             error_handler(INVINS);
-            printf("detectador por el handler\n");
         break;
     }
 }
@@ -399,9 +396,7 @@ void error_handler(int error){
     case INVINS:
         printf("ERROR: INSTRUCCION INVALIDA:\n");
         break;
-    case INVVER:
-        printf("ERROR: VERSION INVALIDA\n");
-        break;
+    default: break;
     }
 
     exit(1);
@@ -592,7 +587,8 @@ int get_logical_dir(MaquinaVirtual mv, int operandoM){ //funcion creada para obt
 
     int segmento = (mv.registros[(operandoM >> 16) & 0x000000FF]);
     int offset = (operandoM & 0x0000FFFF);
-    int direccion = segmento + offset ;
+
+    int direccion = segmento + offset; 
 
     return direccion;
 }
