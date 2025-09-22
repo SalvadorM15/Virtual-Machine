@@ -609,11 +609,6 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
     return physical_dir;
 }
 
-void inicioRam(MaquinaVirtual *mv){
-    for(int i=0; i<MEM; i++){
-        mv->ram[i] = 0;
-    }
-}
 
 //--------------------------------------------------FIN DE UTILIDADES--------------------------------------------------------------
 

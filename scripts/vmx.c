@@ -18,9 +18,8 @@ void main(int argC, char *argV[]){
     lectura_arch(&mv, &tamSeg,fileName);
     iniciaMV(&mv,tamSeg);
 
-    if(argC == 3 && strcmp(argV[2],"-d") == 0){
+    if(argC == 3 && strcmp(argV[2],"-d") == 0)
         disassembler(&mv, tamSeg);
-    }
 
     do{
         step(&mv);
