@@ -1,8 +1,0 @@
-//ideas
-
-preguntas:
-
--puede ser que en el mar me sobren una banda de bits para indicar la cantidad de bytes?
-
-    
-    

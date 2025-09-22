@@ -1,6 +1,0 @@
--verificar el mal funcionamiento del sys
--verificar el funcionamiento del acceso a memoria
-
-
-
-
