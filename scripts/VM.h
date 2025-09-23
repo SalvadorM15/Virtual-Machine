@@ -124,3 +124,5 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg);
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv);
 int get_valor_operando(int operando, MaquinaVirtual *mv);
+
+//fin vm.h

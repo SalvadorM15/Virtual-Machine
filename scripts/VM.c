@@ -712,4 +712,4 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 }
 
 //------------------------------------FIN GETTERS Y SETTERS DE OPERANDOS--------------------------------------------------------------------------------
-//fin vm
+//fin vm.c
