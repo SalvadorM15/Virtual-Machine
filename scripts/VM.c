@@ -164,7 +164,7 @@ void sys(int op, MaquinaVirtual *mv){
     int tamanioCelda = ((mv->registros[ECX] >> 16) & 0x0000FFFF);
     int direccionInicial = mv->registros[EDX]; // obtengo la direccion logica inicial
     direccionInicial = logical_to_physical(direccionInicial, mv->seg, tamanioCelda*cantCeldas); // obtengo la direccion fisica inicial
-    if ( direccionInicial == -1){ // evaluo si me voy a quedar sin memoria
+    if ( direccionInicial == -1){
         error_handler(SEGFAULT);
         return;
     }
@@ -204,7 +204,7 @@ void sys(int op, MaquinaVirtual *mv){
                 else {
                     if(get_valor_operando(op,mv) == 2){
                         int salida = 0;
-                        // rearmo el dato de salida, que estaba previamente guardado byte por byte   
+                        // rea printf("error detectado en el sys\n"); // evaluo si me voy a quedar sin memoriarmo el dato de salida, que estaba previamente guardado byte por byte   
                        salida = (((mv->ram[i] << 24)&0xFF000000) | ((mv->ram[i + 1] << 16)&0x00FF0000) |  ((mv->ram[i + 2] << 8)&0x00000FF00) | ((mv->ram[i + 3]&0x000000FF)));
                         switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
                         case 16: imprimirBinarioCompacto(salida);
@@ -494,7 +494,7 @@ void step(MaquinaVirtual *mv){
 
 void procesaOperacion(char instruccion, int *topA, int *topB, int *op){
 
-    *op = (int)(instruccion & 0x0000001F);
+    *op = (int)(instruccion & 0x0000001F); // obtengo los 5 bits menos significativos
     if((instruccion & 0x30) != 0){
         *topB = (instruccion >> 6) &0x03;
         *topA = (instruccion >> 4) &0x03;
@@ -515,18 +515,19 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
     mv->registros[OP1] = 0;
     mv->registros[OP2] = 0;
     for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topB+1); i++){
-        mv->registros[OP2] = mv->registros[OP2] << 8;
-        mv->registros[OP2] += mv->ram[i];
+        mv->registros[OP2] = ((mv->registros[OP2])<< 8);
+        mv->registros[OP2] |= mv->ram[i];
     }
     mv->registros[IP] += topB;
 
     for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topA+1); i++){
-        mv->registros[OP1] = mv->registros[OP1] << 8;
-        mv->registros[OP1] += mv->ram[i];
+        mv->registros[OP1] = ((mv->registros[OP1]) << 8);
+        mv->registros[OP1] |= mv->ram[i];
     }
     mv->registros[IP] += topA;
     mv->registros[IP]++; // avanzo el ip al proximo byte de instruccion porque sino queda en el ultimo operando
     //agrego el tipo de operando en el byte mas significativo
+    
     mv->registros[OP1] += (topA << 24);
     mv->registros[OP2] += (topB << 24);
 }
@@ -585,8 +586,11 @@ void evaluarCC(int res, MaquinaVirtual *mv){
 
 int get_logical_dir(MaquinaVirtual mv, int operandoM){ //funcion creada para obtener la direccion logica de un operando de memoria
 
-    int segmento = (mv.registros[(operandoM >> 16) & 0x000000FF]);
-    int offset = (operandoM & 0x0000FFFF);
+    int segmento = (mv.registros[(operandoM >> 16) & 0x0000001F]);
+    int offset =(operandoM & 0x0000FFFF);
+
+    if(offset & 0x00008000) // si el bit 15 del offset es 1, es negativo
+        offset = offset | 0xFFFF0000; // lo extiendo a 32 bits
 
     int direccion = segmento + offset; 
 
@@ -690,7 +694,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 
     int direccion = logical_to_physical(mv->registros[LAR] , mv->seg , 4);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
-    mv->registros[MAR] +=(3<<30); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
+    mv->registros[MAR] +=(4<<29); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
     if(direccion == -1 || (direccion + 4) > MEM){
         error_handler(SEGFAULT);

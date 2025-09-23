@@ -113,7 +113,10 @@ void imprimir_operador(int op, int Toperando){
     case 2: printf("%d", op & 0x00FFFFFF);
             break;
     case 3:
-            printf("[%s + %d]", identificarRegistro((op >> 16) & 0x000000FF), (op & 0x0000FFFF)); 
+                if ((op& 0X0000FFFF) & 0x00008000) // si el bit 15 del offset es 1, es negativo
+                    printf("[%s - %d]", identificarRegistro((op >> 16) & 0x0000001F), ((~(op & 0x0000FFFF) + 1) & 0x0000FFFF));
+                else 
+                    printf("[%s + %d]", identificarRegistro((op >> 16) & 0x0000001F), (op & 0x0000FFFF)); // lo extiendo a 32 bits y le saco el signo
             break;
     }
 }
