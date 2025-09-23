@@ -25,6 +25,6 @@ void main(int argC, char *argV[]){
         step(&mv);
     }while(mv.registros[IP] > -1 && mv.registros[IP]<tamSeg);
 }
-
+//fin vmx
 
 
