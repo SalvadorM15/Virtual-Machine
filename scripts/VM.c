@@ -169,6 +169,8 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
+        printf("entro el al sys\n");
+        printf("%d\n",get_valor_operando(op,mv));
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("[%d] :", i);
                 if (get_valor_operando(op,mv)==1){
@@ -201,11 +203,12 @@ void sys(int op, MaquinaVirtual *mv){
                     mv->ram[i + 3] = entrada & 0x000000FF;
                     
                 }
-                else {
+                else if(get_valor_operando(op,mv) == 2){ 
                     if(get_valor_operando(op,mv) == 2){
                         int salida = 0;
                         // rea printf("error detectado en el sys\n"); // evaluo si me voy a quedar sin memoriarmo el dato de salida, que estaba previamente guardado byte por byte   
                        salida = (((mv->ram[i] << 24)&0xFF000000) | ((mv->ram[i + 1] << 16)&0x00FF0000) |  ((mv->ram[i + 2] << 8)&0x00000FF00) | ((mv->ram[i + 3]&0x000000FF)));
+                       printf("salida: %08X\n", salida);
                         switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
                         case 16: imprimirBinarioCompacto(salida);
                                 break;
@@ -224,11 +227,15 @@ void sys(int op, MaquinaVirtual *mv){
                         }
                         case 1: printf("salida: %d \n", salida);
                                 break;
+                        default: error_handler(INVINS);
+                                 break;
                         }
                     }
                     else
                         error_handler(INVINS);
                 }
+                else
+                    error_handler(INVINS);
         }
     }
 }
@@ -516,7 +523,11 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
     mv->registros[OP2] = 0;
     for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topB+1); i++){
         mv->registros[OP2] = ((mv->registros[OP2])<< 8);
-        mv->registros[OP2] |= mv->ram[i];
+        mv->registros[OP2] |= (mv->ram[i])&0x000000FF;
+    }
+    if(topB == 2){
+        if(mv->registros[OP2] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
+            mv->registros[OP2] = mv->registros[OP2] | 0x00FF0000; // lo extiendo a 32 bits
     }
     mv->registros[IP] += topB;
 
@@ -527,9 +538,8 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
     mv->registros[IP] += topA;
     mv->registros[IP]++; // avanzo el ip al proximo byte de instruccion porque sino queda en el ultimo operando
     //agrego el tipo de operando en el byte mas significativo
-    
-    mv->registros[OP1] += (topA << 24);
-    mv->registros[OP2] += (topB << 24);
+    mv->registros[OP1] |= (topA << 24)&0x03000000;
+    mv->registros[OP2] |= (topB << 24)&0x03000000;
 }
 
 //------------------------------------------------------FIN DE LAS FUNCIONES PRINCIPALES DE LA MAQUINA VIRTUAL-----------------------------------------------------------------------------
@@ -632,12 +642,14 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
 //------------------------------------GETTERS Y SETTERS DE OPERANDOS--------------------------------------------------------------------------------
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
-
-    if((operando & 0xFF000000)>>24 == 1 ){
+    if(valor & 0x00800000) // si el bit 23 del inmediato es 1, es negativo
+            valor = valor | 0xFF000000; // lo extiendo a 32 bits
+    
+    if(((operando>>24)&0x00000003) == 1 ){
         mv->registros[(operando & 0x00FFFFFF)] = valor;
     }
     else{ 
-        if((operando & 0xFF000000)>>24 == 3){
+        if((operando>>24)&0X00000003 == 3){
             set_valor_mem((operando & 0x00FFFFFF),valor, mv);
         }
         else{
@@ -649,19 +661,26 @@ void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
 }
 
 int get_valor_operando(int operando, MaquinaVirtual *mv){
-
-    if((operando & 0xFF000000)>>24 == 2 ){ // operando inmediato
-        return (operando & 0x00FFFFFF);
+    int resultado;
+    if(((operando & 0x03000000)>>24)== 2 ){ // operando inmediato
+        resultado = (operando & 0x0000FFFF);
+        if(resultado & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
+            resultado = resultado | 0xFFFF0000; // lo extiendo a 32 bits
     }
     else{
-        if((operando & 0xFF000000)>>24 == 1 ){ // operando registro
-            return mv->registros[(operando & 0x00FFFFFF)];
+        if(((operando & 0x03000000)>>24)== 1 ){ // operando registro
+            resultado = mv->registros[(operando & 0x00FFFFFF)];
         }
         else{ // operando memoria
             if((operando & 0xFF000000)>>24 == 3)
-                return get_valor_mem((operando & 0x00FFFFFF), mv);
+                resultado = get_valor_mem((operando & 0x00FFFFFF), mv);
         }
+         if(resultado & 0x00800000) // si el bit 23 del inmediato es 1, es negativo
+            resultado = resultado | 0xFF000000; // lo extiendo a 32 bits
+    
     }
+    return resultado;
+   
 }
 
 int get_valor_mem(int operandoM, MaquinaVirtual *mv){

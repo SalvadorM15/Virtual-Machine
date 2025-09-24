@@ -110,7 +110,10 @@ void imprimir_operador(int op, int Toperando){
     switch (Toperando){
     case 1: printf("%s", identificarRegistro(op & 0x00FFFFFF));
             break;
-    case 2: printf("%d", op & 0x00FFFFFF);
+    case 2: if(op & 0x00800000) // si el bit 23 del inmediato es 1, es negativo
+                printf("%d", op|0xFFFF0000);
+            else
+                printf("%d", op & 0x00FFFFFF);
             break;
     case 3:
                 if ((op& 0X0000FFFF) & 0x00008000) // si el bit 15 del offset es 1, es negativo
@@ -145,20 +148,24 @@ void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip){
     mv->registros[OP1] = 0;
     mv->registros[OP2] = 0;
     for(i = ((*ip)+1); i < ((*ip) + topB+1); i++){
-        mv->registros[OP2] = mv->registros[OP2] << 8;
-        mv->registros[OP2] += mv->ram[i];
+        mv->registros[OP2] = ((mv->registros[OP2]) << 8);
+        mv->registros[OP2] |= (mv->ram[i])&0x000000FF;
+    }
+    if(topB == 2){
+        if(mv->registros[OP2] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
+            mv->registros[OP2] = mv->registros[OP2] | 0x00FF0000; // lo extiendo a 32 bits
     }
     (*ip) += topB;
 
     for(i = ((*ip)+1); i < ((*ip) + topA+1); i++){
-        mv->registros[OP1] = mv->registros[OP1] << 8;
-        mv->registros[OP1] += mv->ram[i];
+        mv->registros[OP1] = ((mv->registros[OP1]) << 8);
+        mv->registros[OP1] |= mv->ram[i];
     }
     (*ip) += topA;
     (*ip)++; // avanzo el ip al proximo byte de instruccion porque sino queda en el ultimo operando
     //agrego el tipo de operando en el byte mas significativo
-    mv->registros[OP1] += (topA << 24);
-    mv->registros[OP2] += (topB << 24);
+    mv->registros[OP1] += (topA << 24)&0x03000000;
+    mv->registros[OP2] += (topB << 24)&0x03000000;
 }
 //extraido del codigo del step
 /*
