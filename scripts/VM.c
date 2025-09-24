@@ -203,36 +203,28 @@ void sys(int op, MaquinaVirtual *mv){
                     mv->ram[i + 3] = entrada & 0x000000FF;
                     
                 }
-                else if(get_valor_operando(op,mv) == 2){ 
-                    if(get_valor_operando(op,mv) == 2){
-                        int salida = 0;
+                else {
+                    if(get_valor_operando(op,mv) == 2){ 
+                       int salida = 0;
                         // rea printf("error detectado en el sys\n"); // evaluo si me voy a quedar sin memoriarmo el dato de salida, que estaba previamente guardado byte por byte   
                        salida = (((mv->ram[i] << 24)&0xFF000000) | ((mv->ram[i + 1] << 16)&0x00FF0000) |  ((mv->ram[i + 2] << 8)&0x00000FF00) | ((mv->ram[i + 3]&0x000000FF)));
                        printf("salida: %08X\n", salida);
-                        switch (mv->registros[EAX]){ // evaluo el tipo de dato de salida
-                        case 16: imprimirBinarioCompacto(salida);
-                                break;
-                        case 8: printf("salida: %x \n", salida);
-                                break;
-                        case 4: printf("salida: %o \n", salida);
-                                break;
-                        case 2: {
-                                unsigned char ch =(salida & 0xFF);
-                                if (ch>=32 && ch<=126) // evaluo si es caracter imprimible
-                                    printf("salida: %c \n" , ch);
-                                    else
-                                        printf(". \n");
-                                printf("salida: %c \n", salida);
-                                break;
+                       if (mv->registros[EAX] & 0x10) // si el bit 4 del eax es 1, imprimo en formato compacto
+                           imprimirBinarioCompacto(salida);
+                       if (mv->registros[EAX] & 0x08) 
+                            printf("salida: %x \n", salida);
+                       if (mv->registros[EAX] & 0x04)
+                            printf("salida: %o \n", salida);    
+                       if (mv->registros[EAX] & 0x02){
+                            unsigned char ch =(salida & 0xFF);
+                            if (ch>=32 && ch<=126) // evaluo si es caracter imprimible
+                                printf("salida: %c \n" , ch);
+                            else
+                                printf(". \n");
                         }
-                        case 1: printf("salida: %d \n", salida);
-                                break;
-                        default: error_handler(INVINS);
-                                 break;
-                        }
+                       if (mv->registros[EAX] & 0x01)
+                            printf("salida: %d \n", salida);
                     }
-                    else
-                        error_handler(INVINS);
                 }
                 else
                     error_handler(INVINS);
