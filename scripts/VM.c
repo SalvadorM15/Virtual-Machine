@@ -225,16 +225,19 @@ void sys(int op, MaquinaVirtual *mv){
                        if (mv->registros[EAX] & 0x01)
                             printf("salida: %d \n", salida);
                     }
+                    else
+                        error_handler(INVINS);
                 }
-                else
-                    error_handler(INVINS);
         }
     }
 }
 void jmp(int op, MaquinaVirtual *mv){
 
-
-    mv->registros[IP] =  get_valor_operando(op,mv);
+    int proxIP = get_valor_operando(op,mv);
+    if(proxIP < 0 || proxIP >= mv->seg[mv->registros[CS]][1] + 1)
+        error_handler(SEGFAULT);
+    else
+        mv->registros[IP] =  get_valor_operando(op,mv);
 }
 
 void jz(int op, MaquinaVirtual *mv){
@@ -606,7 +609,7 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
     if(segment < MAX){
         physical_dir = seg_table[segment][0];
         physical_dir += (logical_dir & 0x0000FFFF);
-        if(physical_dir > segment_limit || physical_dir + cant_bytes > segment_limit)
+        if(physical_dir > segment_limit || physical_dir + cant_bytes > segment_limit || physical_dir < seg_table[segment][0])
             physical_dir = -1;
     }
     else

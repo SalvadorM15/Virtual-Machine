@@ -99,7 +99,7 @@ const char* identificarRegistro(int op){
             break;
     case DS: return "DS";
             break;
-    default: "registro no encontrado";
+    default: return "registro no encontrado";
             break;
     }
 }
