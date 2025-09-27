@@ -169,7 +169,6 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
-        printf("entro el al sys\n");
         printf("%d\n",get_valor_operando(op,mv));
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("[%d] :", i);
@@ -208,7 +207,6 @@ void sys(int op, MaquinaVirtual *mv){
                        int salida = 0;
                         // rea printf("error detectado en el sys\n"); // evaluo si me voy a quedar sin memoriarmo el dato de salida, que estaba previamente guardado byte por byte   
                        salida = (((mv->ram[i] << 24)&0xFF000000) | ((mv->ram[i + 1] << 16)&0x00FF0000) |  ((mv->ram[i + 2] << 8)&0x00000FF00) | ((mv->ram[i + 3]&0x000000FF)));
-                       printf("salida: %08X\n", salida);
                        if (mv->registros[EAX] & 0x10) // si el bit 4 del eax es 1, imprimo en formato compacto
                            imprimirBinarioCompacto(salida);
                        if (mv->registros[EAX] & 0x08) 
@@ -222,8 +220,8 @@ void sys(int op, MaquinaVirtual *mv){
                             else
                                 printf(". \n");
                         }
-                       if (mv->registros[EAX] & 0x01)
-                            printf("salida: %d \n", salida);
+                          if (mv->registros[EAX] & 0x01)
+                             printf("salida: %d \n", salida);
                     }
                     else
                         error_handler(INVINS);
@@ -233,7 +231,7 @@ void sys(int op, MaquinaVirtual *mv){
 }
 void jmp(int op, MaquinaVirtual *mv){
 
-    int proxIP = get_valor_operando(op,mv);
+    int proxIP = (get_valor_operando(op,mv))&0x0000ffff;
     if(proxIP < 0 || proxIP >= mv->seg[mv->registros[CS]][1] + 1)
         error_handler(SEGFAULT);
     else
@@ -483,10 +481,11 @@ void step(MaquinaVirtual *mv){
     char instruccion = mv->ram[mv->registros[IP]];
 
     //leo los valores del cs y muevo el IP
-
+    
     procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
-    lee_operandos(ToperandoA,ToperandoB,mv); // lee los siguientes bytes de los operandos A y B y mueve el ip
     mv->registros[OPC] = operacion;
+    lee_operandos(ToperandoA,ToperandoB,mv); // lee los siguientes bytes de los operandos A y B y mueve el ip
+    
 
     //lo valores operando 1 y 2 quedan guardados en los registros OP1 Y OP2 respectivamente
 
@@ -528,7 +527,11 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
 
     for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topA+1); i++){
         mv->registros[OP1] = ((mv->registros[OP1]) << 8);
-        mv->registros[OP1] |= mv->ram[i];
+        mv->registros[OP1] |= mv->ram[i]&0x000000FF;
+    }
+    if(topA == 2){
+        if(mv->registros[OP1] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
+            mv->registros[OP1] = mv->registros[OP1] | 0x00FF0000; // lo extiendo a 32 bits
     }
     mv->registros[IP] += topA;
     mv->registros[IP]++; // avanzo el ip al proximo byte de instruccion porque sino queda en el ultimo operando
