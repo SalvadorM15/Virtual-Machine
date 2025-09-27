@@ -169,7 +169,6 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
-        printf("%d\n",get_valor_operando(op,mv));
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("[%d] :", i);
                 if (get_valor_operando(op,mv)==1){
@@ -205,7 +204,7 @@ void sys(int op, MaquinaVirtual *mv){
                 else {
                     if(get_valor_operando(op,mv) == 2){ 
                        int salida = 0;
-                        // rea printf("error detectado en el sys\n"); // evaluo si me voy a quedar sin memoriarmo el dato de salida, que estaba previamente guardado byte por byte   
+                        // evaluo si me voy a quedar sin memoriarmo el dato de salida, que estaba previamente guardado byte por byte   
                        salida = (((mv->ram[i] << 24)&0xFF000000) | ((mv->ram[i + 1] << 16)&0x00FF0000) |  ((mv->ram[i + 2] << 8)&0x00000FF00) | ((mv->ram[i + 3]&0x000000FF)));
                        if (mv->registros[EAX] & 0x10) // si el bit 4 del eax es 1, imprimo en formato compacto
                            imprimirBinarioCompacto(salida);
@@ -214,11 +213,14 @@ void sys(int op, MaquinaVirtual *mv){
                        if (mv->registros[EAX] & 0x04)
                             printf("salida: %o \n", salida);    
                        if (mv->registros[EAX] & 0x02){
-                            unsigned char ch =(salida & 0xFF);
-                            if (ch>=32 && ch<=126) // evaluo si es caracter imprimible
-                                printf("salida: %c \n" , ch);
-                            else
-                                printf(". \n");
+                            for(int i = 0; i < 4; i++){
+                                unsigned char ch = (salida >> (8 * (3 - i))) & 0x000000FF;
+                                if(ch != 0)
+                                    if (ch >= 32 && ch <= 126) // evaluo si es caracter imprimible
+                                        printf("salida: %c \n", ch);
+                                    else
+                                        printf(". \n");
+                            }
                         }
                           if (mv->registros[EAX] & 0x01)
                              printf("salida: %d \n", salida);
