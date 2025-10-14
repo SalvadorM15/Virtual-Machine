@@ -11,6 +11,8 @@
 #define OPC 4
 #define OP1 5
 #define OP2 6
+#define SP 7
+#define BP 8
 #define EAX 10
 #define EBX 11
 #define ECX 12
@@ -21,6 +23,10 @@
 #define CC 17
 #define CS 26
 #define DS 27
+#define ES 28
+#define SS 29
+#define KS 30
+#define PS 31
 
 //FIN DE LAS CONSTANTES DE REGISTROS
 
@@ -33,6 +39,10 @@
 #define JNP 6
 #define JNN 7
 #define NOT 8
+#define PUSH 11
+#define POP 12
+#define CALL 13
+#define RET 14
 #define STOP 15
 #define MOV 16
 #define ADD 17

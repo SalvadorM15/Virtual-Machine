@@ -287,6 +287,17 @@ void not(int op, MaquinaVirtual *mv){
     mv->registros[IP] = -1;
  }
 
+ void ret(MaquinaVirtual *mv){
+    int direccion = get_valor_mem((mv->registros[SP]), mv);
+    mv->registros[SP] += 4;
+    if(mv->registros[SP] > mv->seg[SS][1] + mv->seg[SS][0])
+        error_handler(STACKUNDER);
+    if(direccion < 0 || direccion >= mv->seg[mv->registros[CS]][1] + mv->seg[mv->registros[CS]][0])
+        error_handler(SEGFAULT);
+    else
+        mv->registros[IP] = direccion;
+ }
+
 
 
 
@@ -757,38 +768,44 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
     int i = 0;
     int offset = 0;
     if(param > 0){
-        mv->seg[i][0] = 0;
+        mv->seg[i][0] = offset;
         mv->seg[i][1] = param - 1;
         i++;
+        mv->registros[PS] = offset; // inicializo el puntero de ParamSegment al comienzo del segmento de parametros
         offset += param;
     }
     if(code > 0){
         mv->seg[i][0] = offset;
         mv->seg[i][1] = code - 1;
+        mv->registros[CS] = offset; // inicializo el puntero de CodeSegment al comienzo del segmento de codigo
         i++;
         offset += code;
     }
     if(data > 0){
         mv->seg[i][0] = offset;
         mv->seg[i][1] = data - 1;
+        mv->registros[DS] = offset; // inicializo el puntero de DataSegment al comienzo del segmento de datos
         i++;
         offset += data;
     }
     if(extra > 0){
         mv->seg[i][0] = offset;
         mv->seg[i][1] = extra - 1;
+        mv->registros[ES] = offset; // inicializo el puntero de ExtraSegment al comienzo del segmento extra
         i++;
         offset += extra;
     }
     if(stack > 0){
         mv->seg[i][0] = offset;
         mv->seg[i][1] = stack - 1;
+        mv->registros[SS] = offset; // inicializo el puntero de StackSegment al comienzo del segmento de stack
         i++;
         offset += stack;
     }
     if(constant > 0){
         mv->seg[i][0] = offset;
         mv->seg[i][1] = constant - 1;
+        mv->registros[KS] = offset; // inicializo el puntero de ConstantSegment al comienzo del segmento de constantes
         i++;
         offset += constant;
     }

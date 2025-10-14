@@ -3,7 +3,7 @@
 - Poder leer la cabezera nueva / vieja
 - generacion de Imagen
 - Lectura de Imagen
-- modificar la tabla de segmentos
+- modificar la tabla de segmentos (creo que listo)
 - modificar la inicializacion de registros
 - hacer las nuevas instrucciones
 - tener en cuenta que los operandos ahora pueden ser: EAX, AX, AL, AH
