@@ -270,6 +270,17 @@ void not(int op, MaquinaVirtual *mv){
     aux = ~get_valor_operando(op,mv);
     evaluarCC(aux, mv);
 }
+
+
+/* void push(int operando,MaquinaVirtual *mv){
+    mv->registros[SP] -= 4;
+    if(mv->registros[SP] < mv->seg[SS][0])
+        error_handler(STACKOVER);
+    int op = get_valor_operando(operando,mv); //Chequear si esto esta bien
+
+}
+*/
+
  // Sin operandos
 
  void stop(MaquinaVirtual *mv){
@@ -740,4 +751,52 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 }
 
 //------------------------------------FIN GETTERS Y SETTERS DE OPERANDOS--------------------------------------------------------------------------------
+
+
+void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int extra, int stack, int constant){
+    int i = 0;
+    int offset = 0;
+    if(param > 0){
+        mv->seg[i][0] = 0;
+        mv->seg[i][1] = param - 1;
+        i++;
+        offset += param;
+    }
+    if(code > 0){
+        mv->seg[i][0] = offset;
+        mv->seg[i][1] = code - 1;
+        i++;
+        offset += code;
+    }
+    if(data > 0){
+        mv->seg[i][0] = offset;
+        mv->seg[i][1] = data - 1;
+        i++;
+        offset += data;
+    }
+    if(extra > 0){
+        mv->seg[i][0] = offset;
+        mv->seg[i][1] = extra - 1;
+        i++;
+        offset += extra;
+    }
+    if(stack > 0){
+        mv->seg[i][0] = offset;
+        mv->seg[i][1] = stack - 1;
+        i++;
+        offset += stack;
+    }
+    if(constant > 0){
+        mv->seg[i][0] = offset;
+        mv->seg[i][1] = constant - 1;
+        i++;
+        offset += constant;
+    }
+}
+
+
+
+
+
+
 //fin vm.c
