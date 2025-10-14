@@ -1,0 +1,18 @@
+- Hacer que la memoria pueda sea variable
+- modificar la entrada por consola (parametros del main)
+- Poder leer la cabezera nueva / vieja
+- generacion de Imagen
+- Lectura de Imagen
+- modificar la tabla de segmentos
+- modificar la inicializacion de registros
+- hacer las nuevas instrucciones
+- tener en cuenta que los operandos ahora pueden ser: EAX, AX, AL, AH
+- Para los operandos de memoria ahora se puede leer/escribir long/word/byte
+- implementar la pila junto con sus instrucciones
+- implementar el param segment
+- implementar subrutina principal
+- agregar los nuevos sys
+- implementar los breakpoints
+- implementar el debugger
+- manejo de errores
+- modificar el disassembler
