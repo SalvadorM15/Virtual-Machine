@@ -398,6 +398,15 @@ void error_handler(int error){
     case INVINS:
         printf("ERROR: INSTRUCCION INVALIDA:\n");
         break;
+    case MEMINS:
+        printf("ERROR: MEMORIA INSUFICIENTE\n");
+        break;
+    case STACKOVER:
+        printf("ERROR: STACK OVERFLOW\n");
+        break;
+    case STACKUNDER:
+        printf("ERROR: STACK UNDERFLOW\n");
+        break;
     default: break;
     }
 

@@ -57,6 +57,9 @@
 #define DIV0 1
 #define INVINS 2
 #define INVVER 3
+#define MEMINS 4
+#define STACKOVER 5
+#define STACKUNDER 6
 
 typedef struct{
     int registros[REG];

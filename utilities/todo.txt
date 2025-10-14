@@ -14,5 +14,4 @@
 - agregar los nuevos sys
 - implementar los breakpoints
 - implementar el debugger
-- manejo de errores
 - modificar el disassembler
