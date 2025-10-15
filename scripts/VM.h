@@ -70,6 +70,7 @@
 #define MEMINS 4
 #define STACKOVER 5
 #define STACKUNDER 6
+#define NOFILE 7
 
 typedef struct{
     int registros[REG];

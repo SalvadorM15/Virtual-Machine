@@ -429,6 +429,9 @@ void error_handler(int error){
     case STACKUNDER:
         printf("ERROR: STACK UNDERFLOW\n");
         break;
+    case NOFILE:
+        printf("ERROR: NO SE ENCONTRO EL ARCHIVO\n");
+        break;
     default: break;
     }
 
@@ -812,7 +815,45 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
 
 
 
-
+// CHEQUEAR, NO HAY NINGUN TIPO DE CHANCE DE QUE ESTO ANDE
+void manejaArgumentos(int argc, char argv[], char vmx[], char vmi[], unsigned int *memoria, int *d, int *p, int *param, MaquinaVirtual *mv){
+    int i;
+    *memoria = 16384; // valor por defecto
+    *d = 0;
+    *p = 0;
+    vmx[0] = '\0';  
+    vmi[0] = '\0';
+    if(argc < 2){
+        error_handler(NOFILE);
+    }
+    for(i = 1; i < argc; i++){
+        if (strstr(argv[i], ".vmx")) {
+            strcpy(vmx, argv[i]);
+        } 
+        else if (strstr(argv[i], ".vmi")) {
+            strcpy(vmi, argv[i]);
+        } 
+        else if (strncmp(argv[i], "m=", 2) == 0) {
+            *memoria = atoi(argv[i] + 2) * 1024;  // convertir KiB a bytes
+        } 
+        else if (strcmp(argv[i], "-d") == 0) {
+            *d = 1;
+        } 
+        else if (strcmp(argv[i], "-p") == 0) {
+            *p = 1;
+            *param = 0;
+        }
+        else{
+            int p = atoi(argv[i]);
+            for(int j = 0; j < 4; j++){
+                mv->ram[*param] = (p >> (24 - (j * 8))) & 0x000000FF;
+                (*param)++;
+            }
+        }        
+    }
+       
+    
+}
 
 
 //fin vm.c
