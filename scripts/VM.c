@@ -862,6 +862,8 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], unsigned i
 
 // ----------------------------------------- IMAGEN ----------------------------------------------------
 
+// ----------- LECTURA --------------
+
 
 void leeImg(MaquinaVirtual *mv, char vmi[]){
     FILE *arch;
@@ -926,6 +928,62 @@ void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, int tamMem){
     for(i = 0; i<tamMem; i++){
         fread(&elem, sizeof(char), 1, arch);
         mv->ram[i] = elem;
+    }
+}
+
+//--------------- ESCRITURA ---------------
+
+void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
+    FILE *arch;
+    arch = fopen(vmi, "wb");
+    if(arch){
+        escribeHeaderImg(version, tamMem, arch);
+        escribeRegistrosImg(mv, arch);
+        escribeTablaSegImg();
+        escribeMemoriaImg(mv, tamMem, arch);
+        fclose(arch);
+    }
+    else{
+        printf("NO SE PUDO ABRIR EL ARCHIVO .vmi");
+        error_handler(NOFILE);
+    }
+
+
+}
+
+void escribeHeaderImg(char version, short int tamMem, FILE *arch){
+    char identificador[] = "VMI25";
+    
+    //ESCRIBOEL IDENTIFICADOR
+    fwrite(identificador, sizeof(char), strlen(identificador), arch);
+    
+    //ESCRIBO LA VERSION
+    fwrite(&version, sizeof(char), 1, arch);
+    
+    //ESCRIBO EL TAMANO EN KiB
+    fwrite(&tamMem, sizeof(short int), 1, arch);
+
+}
+
+void escribeRegistrosImg(MaquinaVirtual mv, FILE *arch){
+    int i;
+
+    //POR CADA REGISTRO ESCRIBO SUS 4 BYTES EN EL ARCHIVO
+    for(i = 0; i < 32; i++){
+        fwrite(&(mv.registros[i]), sizeof(int), 1, arch);
+    }
+}
+
+void escribeTablaSegImg(){
+
+}
+
+void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, FILE *arch){
+    int i;
+
+    //ESCRIBO CADA BYTE DE LA RAM EN EL ARCHIVO .vmi
+    for(i = 0; i < tamMem; i++){
+        fwrite(&(mv.ram[i]), sizeof(char), 1, arch);
     }
 }
 
