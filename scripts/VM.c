@@ -860,4 +860,74 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], unsigned i
 }
 
 
+// ----------------------------------------- IMAGEN ----------------------------------------------------
+
+
+void leeImg(MaquinaVirtual *mv, char vmi[]){
+    FILE *arch;
+    int tamMem;
+    char version;
+
+    arch = fopen(vmi, "rb");
+    if(arch){
+        leeHeaderImg(&version, &tamMem, arch);
+        leeRegistrosImg(mv, arch);
+        leeTablaSegmentosImg(mv, arch);
+        leeMemoriaImg(mv, arch, tamMem);
+        fclose(arch);
+    }
+    else{
+        printf("NO SE PUDO ABRIR EL ARCHIVO .vmi \n");
+        error_handler(NOFILE);
+    }
+
+}
+
+void leeHeaderImg(char *version, int *tamMem, FILE *arch){
+    char car;
+    int i;
+    //IMPRIME LA VERSION
+    for(i = 0; i < 5; i++){
+        fread(&car, sizeof(char), 1, arch);
+        printf("%c", car);
+    }
+    printf("\n");
+    
+    // LEE LA VERSION
+    fread(version, sizeof(char), 1, arch); 
+    
+    // LEE EL TAMAÑO DE MEMORIA EN KiB
+    fread(tamMem, sizeof(short int), 1, arch); 
+    
+    //PASO A BYTES
+    *tamMem = (*tamMem) * 1024; 
+
+}
+
+void leeRegistrosImg(MaquinaVirtual *mv, FILE *arch){
+    int i;
+    int reg;
+    
+    //LEE EL VALOR DEL REIGSTRO i Y LO GUARDA EN LA MAQUINA VIRTUAL
+    for(i = 0; i < 32; i++){
+        fread(&reg, sizeof(int), 1, arch);
+        mv->registros[i] = reg;
+    }
+}
+
+void leeTablaSegmentosImg(MaquinaVirtual *mv, FILE *arch){
+
+}
+
+void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, int tamMem){
+    int i;
+    char elem;
+    //LEE LA MEMORIA DE LA IMAGEN Y LA GUARDA EN LA MAQUINA VIRTUAL BYTE A BYTE
+    for(i = 0; i<tamMem; i++){
+        fread(&elem, sizeof(char), 1, arch);
+        mv->ram[i] = elem;
+    }
+}
+
+
 //fin vm.c
