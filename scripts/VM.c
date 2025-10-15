@@ -839,17 +839,21 @@ void manejaArgumentos(int argc, char argv[], char vmx[], char vmi[], unsigned in
         else if (strcmp(argv[i], "-d") == 0) {
             *d = 1;
         } 
-        else if (strcmp(argv[i], "-p") == 0) {
+        else if (strcmp(argv[i], "-p") == 0 && vmx[0] != '\0') {
             *p = 1;
             *param = 0;
         }
-        else{
+        else if(*p == 1){
             int p = atoi(argv[i]);
             for(int j = 0; j < 4; j++){
                 mv->ram[*param] = (p >> (24 - (j * 8))) & 0x000000FF;
                 (*param)++;
             }
         }        
+    }
+
+    if(vmx[0] == '\0' && vmi[0] == '\0'){
+        error_handler(NOFILE);
     }
        
     
