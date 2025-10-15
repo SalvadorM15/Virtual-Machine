@@ -447,11 +447,11 @@ void error_handler(int error){
 
 
 
-void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
+void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP){
     FILE *arch;
     char num,version;
     int i;
-
+    *codeSeg=0,*dataSeg=0,*extraSeg=0,*stackSeg=0,*constSeg=0,*offsetEP=0;
     arch = fopen(nombre_arch, "rb");
     if(arch != NULL){
 
@@ -466,13 +466,16 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
         //leo un byte de la version
         fread(&version, sizeof(char), 1, arch);
         printf("\nVersion del archivo: %d \n", version);
-        //lee el tamanio del segmento de codigo
-        printf("\n");
-        if(!feof(arch)){
-            fread(tamSeg, sizeof(short int), 1, arch);
-            (*tamSeg) = ((*tamSeg >> 8) & 0x00FF) | ((*tamSeg << 8) & 0xFF00);
+        //leo el tamanio de los segmentos de codigo
+        if(version == 2){
+            fread(codeSeg,sizeof(unsigned short int),1,arch);
+            fread(dataSeg,sizeof(unsigned short int),1,arch);
+            fread(extraSeg,sizeof(unsigned short int),1,arch);
+            fread(stackSeg,sizeof(unsigned short int),1,arch);
+            fread(constSeg,sizeof(unsigned short int),1,arch);
+            fread(offsetEP,sizeof(unsigned short int),1,arch);
         }
-        printf("Tamanio del segmento de codigo: %d \n", *tamSeg);
+
         //comienza la lectura del codigo y lo almacena en la ram
         i = 0;
         if(!feof(arch)){
@@ -488,17 +491,13 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[]){
 
 }
 
-void iniciaMV(MaquinaVirtual *mv, int codSize){ // codsize leido de la cabecera
+void iniciaMV(MaquinaVirtual *mv, int codSize, int codeSeg, int dataSeg, int extraSeg, int stackSeg, int constSeg, int paramSeg) { // codsize leido de la cabecera
     
-    //inicio la tabla de segmentos
-    mv->seg[0][0] = 0;
-    mv->seg[0][1] = codSize-1;
-    mv->seg[1][0] = codSize;
-    mv->seg[1][1] = MEM-1;
+    //inicio la tabla de segmentos y los registros punteros a los segmentos
+    
+  creaTablaSegmentos(mv,paramSeg,codeSeg,dataSeg,extraSeg,stackSeg,constSeg);
 
-    //inicializo los registros de segmento
-    mv->registros[CS] = 0; // ya se que no esta bien inicializarlo asi, a preguntar
-    mv->registros[DS] = (1<<16); // el segmento de datos comienza despues del segmento de codigo
+    
 
     //inicializo el ip al principio del codigo
 

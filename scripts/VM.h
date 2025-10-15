@@ -74,7 +74,7 @@
 typedef struct{
     int registros[REG];
     char  ram[MEM];
-    short int seg[MAX][2];
+    short int seg[4][6];
  } MaquinaVirtual;
 
 
