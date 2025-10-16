@@ -1,6 +1,6 @@
 
 #define REG 32
-#define MEM 16384
+#define MAXMEM 16384
 #define MAX 6
 #define VERSION 1
 
@@ -74,8 +74,10 @@
 
 typedef struct{
     int registros[REG];
-    char  ram[MEM];
+    char  ram[MAXMEM];
     short int seg[4][6];
+    char vmiFileName[20];
+    int MemSize;
  } MaquinaVirtual;
 
 
@@ -138,5 +140,7 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg);
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv);
 int get_valor_operando(int operando, MaquinaVirtual *mv);
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], unsigned int *memoria, int *d, int *p, int *param, MaquinaVirtual *mv);
+void breakPoint(MaquinaVirtual *mv, char vmiFileName[]);
 
 //fin vm.h

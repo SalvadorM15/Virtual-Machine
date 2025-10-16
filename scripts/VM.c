@@ -225,8 +225,25 @@ void sys(int op, MaquinaVirtual *mv){
                           if (mv->registros[EAX] & 0x01)
                              printf("salida: %d \n", salida);
                     }
-                    else
-                        error_handler(INVINS);
+                    else  if(get_valor_operando(op,mv) == 3){
+                       
+                        //Lectura de strings, hay que solucionar primero el tema de cx, ax, etc.
+                    }
+                    else if(get_valor_operando(op,mv) == 4){
+                        int i = mv->registros[EDX];
+                        while(mv->ram[i] != '\0'){
+                            printf("%c", mv->ram[i]);
+                            i++;
+                        }
+
+                    }
+                    else if(get_valor_operando(op,mv) == 7){
+                        system("clear");
+                    }
+                    else if(get_valor_operando(op,mv) == 0xf){
+                        breakPoint(mv,mv->vmiFileName);
+                    }
+                        
                 }
         }
     }
@@ -283,7 +300,7 @@ void push(int operando,MaquinaVirtual *mv){
     //SI HABIA LUGAR:
     else{
         //GUARDO EN valor EL VALOR DEL OPERANDO (VALOR A GUARDAR EN LA PILA) CONVERTIDO A 4 BYTES (CHEQUEAR)
-        int valor = (int) get_valor_operando(operando, mv);
+        set_valor_operando(operando,mv->registros[SP],mv);
 
         //GUARDAR valor EN MEMORIA
 
@@ -470,7 +487,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], uns
     FILE *arch;
     char num,version;
     int i;
-    *codeSeg=0,*dataSeg=0,*extraSeg=0,*stackSeg=0,*constSeg=0,*offsetEP=0;
+    *dataSeg=0,*extraSeg=0,*stackSeg=0,*constSeg=0,*offsetEP=0;
     arch = fopen(nombre_arch, "rb");
     if(arch != NULL){
 
@@ -485,9 +502,9 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], uns
         //leo un byte de la version
         fread(&version, sizeof(char), 1, arch);
         printf("\nVersion del archivo: %d \n", version);
+        fread(codeSeg,sizeof(unsigned short int),1,arch);
         //leo el tamanio de los segmentos de codigo
         if(version == 2){
-            fread(codeSeg,sizeof(unsigned short int),1,arch);
             fread(dataSeg,sizeof(unsigned short int),1,arch);
             fread(extraSeg,sizeof(unsigned short int),1,arch);
             fread(stackSeg,sizeof(unsigned short int),1,arch);
@@ -510,7 +527,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], uns
 
 }
 
-void iniciaMV(MaquinaVirtual *mv, int codSize, int codeSeg, int dataSeg, int extraSeg, int stackSeg, int constSeg, int paramSeg) { // codsize leido de la cabecera
+void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg) { // codsize leido de la cabecera
     
     //inicio la tabla de segmentos y los registros punteros a los segmentos
     
@@ -764,7 +781,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
     mv->registros[MAR] +=(4<<29); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
-    if(direccion == -1 || (direccion + 4) > MEM){
+    if(direccion == -1 || (direccion + 4) > mv->MemSize){
         error_handler(SEGFAULT);
     }
     else{
@@ -1015,6 +1032,30 @@ void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, FILE *arch){
     //ESCRIBO CADA BYTE DE LA RAM EN EL ARCHIVO .vmi
     for(i = 0; i < tamMem; i++){
         fwrite(&(mv.ram[i]), sizeof(char), 1, arch);
+    }
+}
+
+void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
+    char inst; FILE *imagen;
+
+    imagen = fopen(vmiFileName, "wb");
+    escribeHeaderImg('1',16,imagen);
+    escribeRegistrosImg(*mv,imagen);
+    escribeTablaSegImg();
+    escribeMemoriaImg(*mv,16,imagen);
+    fclose(imagen);
+
+    scanf('%c', &inst);
+
+    if(inst == 'q'){ // q-> corta la ejecucion habiendo guardado la imagen
+        exit(0);
+    }
+    else if(inst == 'g'){ // g-> continua la ejecucion hasta que termine el programa o haya otro break point
+        return;
+    }
+    else if(inst == '\n'){ // enter -> ejecuta la siguiente ejecucion y realiza otro break point
+        step(mv);
+        breakPoint(mv,vmiFileName);
     }
 }
 

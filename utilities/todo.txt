@@ -1,9 +1,5 @@
-- Hacer que la memoria pueda sea variable 
-- modificar la entrada por consola (parametros del main) // CHEQUEAR
+ - modificar la entrada por consola (parametros del main) // CHEQUEAR
 - Poder leer la cabezera nueva / vieja
-- generacion de Imagen
-- Lectura de Imagen
-- modificar la tabla de segmentos // CHEQUEAR
 - modificar la inicializacion de registros
 - hacer las nuevas instrucciones
 - tener en cuenta que los operandos ahora pueden ser: EAX, AX, AL, AH
@@ -11,7 +7,6 @@
 - implementar la pila junto con sus instrucciones
 - implementar el param segment
 - implementar subrutina principal
-- agregar los nuevos sys
-- implementar los breakpoints
+- agregar el string read
 - implementar el debugger
 - modificar el disassembler
