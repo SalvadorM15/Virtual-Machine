@@ -272,14 +272,30 @@ void not(int op, MaquinaVirtual *mv){
 }
 
 
-/* void push(int operando,MaquinaVirtual *mv){
-    mv->registros[SP] -= 4;
-    if(mv->registros[SP] < mv->seg[SS][0])
-        error_handler(STACKOVER);
-    int op = get_valor_operando(operando,mv); //Chequear si esto esta bien
+void push(int operando,MaquinaVirtual *mv){
 
+    //HAGO LUGAR PARA GUARDAR EN LA PILA
+    mv->registros[SP] -= 4;
+
+    //SI NO HABIA LUGAR, STACK OVERFLOW
+    if(mv->registros[SP] < mv->registros[SS])
+        error_handler(STACKOVER);
+    //SI HABIA LUGAR:
+    else{
+        //GUARDO EN valor EL VALOR DEL OPERANDO (VALOR A GUARDAR EN LA PILA) CONVERTIDO A 4 BYTES (CHEQUEAR)
+        int valor = (int) get_valor_operando(operando, mv);
+
+        //GUARDAR valor EN MEMORIA
+
+    }
 }
-*/
+
+void call(int operando, MaquinaVirtual *mv){
+    //CALL ES COMO HACER PUSH IP Y HACER JMP A LA SUBRUTINA DEL OPERANDO
+    push(mv->registros[IP], mv);
+    jmp(operando, mv);
+}
+
 
  // Sin operandos
 
@@ -498,7 +514,7 @@ void iniciaMV(MaquinaVirtual *mv, int codSize, int codeSeg, int dataSeg, int ext
     
     //inicio la tabla de segmentos y los registros punteros a los segmentos
     
-  creaTablaSegmentos(mv,paramSeg,codeSeg,dataSeg,extraSeg,stackSeg,constSeg);
+    creaTablaSegmentos(mv,paramSeg,codeSeg,dataSeg,extraSeg,stackSeg,constSeg);
 
     
 
@@ -765,48 +781,63 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 
 //------------------------------------FIN GETTERS Y SETTERS DE OPERANDOS--------------------------------------------------------------------------------
 
+int creaDireccionLogica(int segmento, int offset){
+    int puntero;
+    puntero = segmento;
+    puntero = puntero << 16;
+    puntero |= (offset && 0x0000FFFF);
+    return puntero;
+}
 
 void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int extra, int stack, int constant){
     int i = 0;
     int offset = 0;
+    mv->registros[PS] = -1;
+    mv->registros[CS] = -1;
+    mv->registros[DS] = -1;
+    mv->registros[ES] = -1;
+    mv->registros[SS] = -1;
+    mv->registros[KS] = -1;
     if(param > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = param - 1;
+        mv->seg[i][1] = param;
         i++;
-        mv->registros[PS] = offset; // inicializo el puntero de ParamSegment al comienzo del segmento de parametros
+        mv->registros[PS] = creaDireccionLogica(i, 0); // inicializo el puntero de ParamSegment al comienzo del segmento de parametros
         offset += param;
     }
     if(code > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = code - 1;
-        mv->registros[CS] = offset; // inicializo el puntero de CodeSegment al comienzo del segmento de codigo
+        mv->seg[i][1] = code;
+        mv->registros[CS] = creaDireccionLogica(i, 0); // inicializo el puntero de CodeSegment al comienzo del segmento de codigo
         i++;
         offset += code;
     }
     if(data > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = data - 1;
-        mv->registros[DS] = offset; // inicializo el puntero de DataSegment al comienzo del segmento de datos
+        mv->seg[i][1] = data;
+        mv->registros[DS] = creaDireccionLogica(i, 0); // inicializo el puntero de DataSegment al comienzo del segmento de datos
         i++;
         offset += data;
     }
     if(extra > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = extra - 1;
-        mv->registros[ES] = offset; // inicializo el puntero de ExtraSegment al comienzo del segmento extra
+        mv->seg[i][1] = extra;
+        mv->registros[ES] = creaDireccionLogica(i, 0); // inicializo el puntero de ExtraSegment al comienzo del segmento extra
         i++;
         offset += extra;
     }
     if(stack > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = stack - 1;
-        mv->registros[SS] = offset; // inicializo el puntero de StackSegment al comienzo del segmento de stack
+        mv->seg[i][1] = stack;
+        mv->registros[SS] = creaDireccionLogica(i, 0); // inicializo el puntero de StackSegment al comienzo del segmento de stack
+        mv->registros[SP] = creaDireccionLogica(i, stack);
         i++;
         offset += stack;
+        
     }
     if(constant > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = constant - 1;
+        mv->seg[i][1] = constant;
         mv->registros[KS] = offset; // inicializo el puntero de ConstantSegment al comienzo del segmento de constantes
         i++;
         offset += constant;
