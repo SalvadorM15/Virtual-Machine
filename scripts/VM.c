@@ -1110,4 +1110,31 @@ void iniciaPila(MaquinaVirtual *mv, int argc, int *argv){
     push(direccionRetorno, &mv);
 
 }
+
+
+
+
+
+
+//******************* DEBUGGER ***********************
+
+//checkear
+void debug(MaquinaVirtual mv, char vmi[], int r, int s, int w, int version, int tamMem){
+    escribeImg(mv, vmi, version, tamMem / 1024);
+    int ip = mv.registros[IP] & 0x0000FFFF;
+    if(r){
+        printf("REGISTRO \t VALOR \n");
+        for(int i = 0; i < 32; i++){
+            printf("%d \t %d \n", i , mv->registros[i]);
+        }
+    }
+    if(s){
+        printf("SEGMENTO \t BASE \t LIMITE \n");
+        for(int i=0; i<MAX; i++){
+            printf("%d \t %d \t %d \n", i , mv->seg[i][0], mv->seg[i][1]);
+        }
+    }
+    disassemblerN(&mv, ip, w);
+}
+
 //fin vm.c

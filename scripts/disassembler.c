@@ -200,4 +200,17 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg){
     }
 }
 
+void disassemblerN(MaquinaVirtual *mv,int ip, int n){
+    int ToperandoA,ToperandoB,operacion;
+    while (ip < mv.seg[mv.registros[(CS >> 16) & 0x0000000F]][1] && operacion != STOP && n > 0){
+        char instruccion = mv->ram[ip];
+        int dir = ip;
+        procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
+        lee_operandos2(ToperandoA,ToperandoB,mv, &ip); // lee los siguientes bytes de los operandos A y B y mueve el ip
+        escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir, operacion);
+        printf("\n");
+        n--;
+    }
+}
+
 //fin dissasembler.c
