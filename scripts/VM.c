@@ -533,7 +533,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], uns
         i = 0;
         if(!feof(arch)){
             fread(&num, sizeof(char), 1, arch);
-            while(!feof(arch) && i < *tamSeg){
+            while(!feof(arch) && i < *codeSeg){
                 (mv->ram)[i] = num;
                 i++;
                 fread(&num, sizeof(char), 1, arch);
@@ -544,7 +544,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], uns
 
 }
 
-void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg) { // codsize leido de la cabecera
+void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg, int offsetEP) { // codsize leido de la cabecera
     
     //inicio la tabla de segmentos y los registros punteros a los segmentos
     
@@ -552,9 +552,9 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
 
     
 
-    //inicializo el ip al principio del codigo
+    //inicializo el ip
 
-    mv->registros[IP] = mv->registros[CS];
+    mv->registros[IP] = mv->registros[CS] + offsetEP;
 
 }
 
@@ -727,7 +727,7 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
     if(valor & 0x00800000) // si el bit 23 del inmediato es 1, es negativo
             valor = valor | 0xFF000000; // lo extiendo a 32 bits  
-    if(((operando>>24)&0x00000003) == 1 ){
+    if(((operando>>24) & 0x00000003) == 1 ){
         int tipoReg = (operando & 0x000C) >> 2;
         switch (tipoReg){
             case 0: // registro de 4 bytes
@@ -907,9 +907,9 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
 
 
 // CHEQUEAR, NO HAY NINGUN TIPO DE CHANCE DE QUE ESTO ANDE
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], unsigned int *memoria, int *d, int *p, int *param, MaquinaVirtual *mv){
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *param, MaquinaVirtual *mv){
     int i;
-    *memoria = 16384; // valor por defecto
+    mv->MemSize = 16384; // valor por defecto
     *d = 0;
     *p = 0;
     vmx[0] = '\0';  
@@ -926,7 +926,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], unsigned i
             strcpy(vmi, argv[i]);
         } 
         else if (strncmp(argv[i], "m=", 2) == 0) {
-            *memoria = atoi(argv[i] + 2) * 1024;  // convertir KiB a bytes
+            mv->MemSize = atoi(argv[i] + 2) * 1024;  // convertir KiB a bytes
         } 
         else if (strcmp(argv[i], "-d") == 0) {
             *d = 1;
@@ -1103,4 +1103,11 @@ void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 }
 
 
+void iniciaPila(MaquinaVirtual *mv, int argc, int *argv){
+    push(argv, &mv);
+    push(argc, &mv);
+    int direccionRetorno =  -1 & 0xBFFFFFFF; //GUARDO EL TIPO DE OPERANDO (INMEDIATO) EN LOS 2 BITS MAS SIGNIFICATIVOS Y -1 EN EL RESTO DE BITS
+    push(direccionRetorno, &mv);
+
+}
 //fin vm.c
