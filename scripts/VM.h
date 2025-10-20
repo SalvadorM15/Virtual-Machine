@@ -1,4 +1,3 @@
-
 #define REG 32
 #define MAXMEM 16384
 #define MAX 6

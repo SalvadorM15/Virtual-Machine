@@ -307,6 +307,23 @@ void push(int operando,MaquinaVirtual *mv){
     }
 }
 
+void pop(int operando, MaquinaVirtual *mv){
+    int valor;
+    //CHEQUEO QUE NO HAYA STACK UNDERFLOW
+    if(mv->registros[SP] >= mv->registros[SS])
+        error_handler(STACKUNDER);
+    else{
+        //LEO DE MEMORIA EL VALOR GUARDADO EN LA PILA
+        valor = get_valor_mem(mv->registros[SP],mv);
+
+        //ACTUALIZO EL REGISTRO SP
+        mv->registros[SP] +=4;
+
+        //GUARDO EN EL OPERANDO EL VALOR LEIDO DE LA PILA
+        set_valor_operando(operando,valor,mv);
+    }
+}
+
 void call(int operando, MaquinaVirtual *mv){
     //CALL ES COMO HACER PUSH IP Y HACER JMP A LA SUBRUTINA DEL OPERANDO
     push(mv->registros[IP], mv);
@@ -709,10 +726,23 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
     if(valor & 0x00800000) // si el bit 23 del inmediato es 1, es negativo
-            valor = valor | 0xFF000000; // lo extiendo a 32 bits
-    
+            valor = valor | 0xFF000000; // lo extiendo a 32 bits  
     if(((operando>>24)&0x00000003) == 1 ){
-        mv->registros[(operando & 0x00FFFFFF)] = valor;
+        int tipoReg = (operando & 0x000C) >> 2;
+        switch (tipoReg){
+            case 0: // registro de 4 bytes
+                mv->registros[(operando & 0x00FFFFFF)]= valor;
+                break;
+            case 1: // 4to byte
+                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFFFF00) | ((unsigned int)(valor & 0x000000FF));
+                break;
+            case 2: // 3er byte
+                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFF00FF) | ((unsigned int)(valor<<8 & 0x0000FF00));
+                break;
+            case 3: // 2 bytes menos significativos
+                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0xFFFF0000) | ((unsigned int)(valor & 0x0000FFFF));
+                break;
+            }
     }
     else{ 
         if((operando>>24)&0X00000003 == 3){
@@ -735,7 +765,21 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
     }
     else{
         if(((operando & 0x03000000)>>24)== 1 ){ // operando registro
-            resultado = mv->registros[(operando & 0x00FFFFFF)];
+            int tipo  = (operando & 0xC0000000) >> 30;   
+            switch (tipo){
+            case 0: // registro de 4 bytes
+                resultado = mv->registros[(operando & 0x00FFFFFF)];
+                break;
+            case 1: // 4to byte
+                resultado = mv->registros[(operando & 0x00FFFFFF)] & 0x000000FF;
+                break;
+            case 2: // 3er byte
+                resultado = ((mv->registros[(operando & 0x00FFFFFF)]) >> 8) & 0x000000FF;
+                break;
+            case 3: // 2 bytes menos significativos
+                resultado = mv->registros[(operando & 0x00FFFFFF)] & 0x0000FFFF;
+                break;
+            }
         }
         else{ // operando memoria
             if((operando & 0xFF000000)>>24 == 3)
@@ -799,10 +843,9 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
 //------------------------------------FIN GETTERS Y SETTERS DE OPERANDOS--------------------------------------------------------------------------------
 
 int creaDireccionLogica(int segmento, int offset){
-    int puntero;
-    puntero = segmento;
-    puntero = puntero << 16;
-    puntero |= (offset && 0x0000FFFF);
+    int puntero = segmento;
+    puntero <<= 16;
+    puntero |= (offset & 0x0000FFFF);
     return puntero;
 }
 

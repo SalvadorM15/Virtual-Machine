@@ -1,5 +1,5 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "VM.h"
 
@@ -24,6 +24,14 @@ const char* identificarMnemonico(int codigo){
             break;
     case NOT: return "NOT";
             break;
+    case PUSH: return "PUSH";
+            break;
+    case POP: return "POP"; 
+            break;
+    case CALL: return "CALL";
+            break;
+    case RET: return "RET";
+            break;            
     case STOP: return "STOP";
             break;
     case MOV: return "MOV";
