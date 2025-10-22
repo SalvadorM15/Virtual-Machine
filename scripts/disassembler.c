@@ -96,46 +96,65 @@ const char *identificaAreaReg(char reg[], int op;){
 
 const char* identificarRegistro(int op){
     switch (op){
-    case LAR: return "LAR";
-              break;
-    case MAR: return "MAR";
-            break;
-    case MBR: return "MBR";
-            break;
-    case IP: return "IP";
-            break;
-    case OPC: return "OPC";
-            break;
-    case OP1: return "OP1";
-            break;
-    case OP2: return "OP2";
-            break;
-    case EAX: return identificaAreaReg("EAX", op);
-            break;
-    case EBX: return identificaAreaReg("EBX", op);
-            break;
-    case ECX: return identificaAreaReg("ECX", op);
-            break;
-    case EDX: return identificaAreaReg("EDX", op);
-            break;
-    case EFX: return identificaAreaReg("EFX", op);
-            break;
-    case EEX: return identificaAreaReg("EEX", op);
-            break;
-    case AC: return "AC";
-            break;
-    case CC: return "CC";
-            break;
-    case CS: return "CS";
-            break;
-    case DS: return "DS";
-            break;
-    default: return "registro no encontrado";
-            break;
+        case LAR: return "LAR";
+                break;
+        case MAR: return "MAR";
+                break;
+        case MBR: return "MBR";
+                break;
+        case IP: return "IP";
+                break;
+        case OPC: return "OPC";
+                break;
+        case OP1: return "OP1";
+                break;
+        case OP2: return "OP2";
+                break;
+        case EAX: return identificaAreaReg("EAX", op);
+                break;
+        case EBX: return identificaAreaReg("EBX", op);
+                break;
+        case ECX: return identificaAreaReg("ECX", op);
+                break;
+        case EDX: return identificaAreaReg("EDX", op);
+                break;
+        case EFX: return identificaAreaReg("EFX", op);
+                break;
+        case EEX: return identificaAreaReg("EEX", op);
+                break;
+        case AC: return "AC";
+                break;
+        case CC: return "CC";
+                break;
+        case CS: return "CS";
+                break;
+        case DS: return "DS";
+                break;
+        case ES: return "ES";
+                break;
+        case PS: return "PS";
+                break;
+        case SS: return "SS";
+                break;
+        case KS: return "KS";
+                break;
+        case SP: return "SP";
+                break;
+        case BP: return "BP";
+                break;
+        default: return "registro no encontrado";
+                break;
     }
 }
 
-
+void evaluaTamanio(int op){
+        switch((op >> 22) & 0x00000003){
+                case 2: printf("w");
+                break;
+                case 3: printf("b");
+                break;
+        }
+}
 
 void imprimir_operador(int op, int Toperando){
     switch (Toperando){
@@ -147,6 +166,7 @@ void imprimir_operador(int op, int Toperando){
                 printf("%d", op & 0x00FFFFFF);
             break;
     case 3:
+                evaluaTamanio(op);
                 if ((op& 0X0000FFFF) & 0x00008000) // si el bit 15 del offset es 1, es negativo
                     printf("[%s - %d]", identificarRegistro((op >> 16) & 0x0000001F), ((~(op & 0x0000FFFF) + 1) & 0x0000FFFF));
                 else 
