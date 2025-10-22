@@ -71,6 +71,29 @@ const char* identificarMnemonico(int codigo){
     }
 }
 
+const char *identificaAreaReg(char reg[], int op;){
+        int area = (op >> 6) & 0x00000003;
+        char salida[] = "";
+        switch(area){
+                case 0:
+                        strcpy(salida, reg);
+                break;
+                case 1:
+                        strcat(salida, reg[1]);
+                        strcat(salida, [2]);
+                break;
+                case 2:
+                        strcat(salida, reg[1]);
+                        strcat(salida, "H");
+                break;
+                case 3:
+                        strcat(salida, reg[1]);
+                        strcat(salida, "X");
+                break;
+        }
+        return salida;
+}
+
 const char* identificarRegistro(int op){
     switch (op){
     case LAR: return "LAR";
@@ -87,17 +110,17 @@ const char* identificarRegistro(int op){
             break;
     case OP2: return "OP2";
             break;
-    case EAX: return "EAX";
+    case EAX: return identificaAreaReg("EAX", op);
             break;
-    case EBX: return "EBX";
+    case EBX: return identificaAreaReg("EBX", op);
             break;
-    case ECX: return "ECX";
+    case ECX: return identificaAreaReg("ECX", op);
             break;
-    case EDX: return "EDX";
+    case EDX: return identificaAreaReg("EDX", op);
             break;
-    case EFX: return "EFX";
+    case EFX: return identificaAreaReg("EFX", op);
             break;
-    case EEX: return "EEX";
+    case EEX: return identificaAreaReg("EEX", op);
             break;
     case AC: return "AC";
             break;
@@ -200,17 +223,5 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg){
     }
 }
 
-void disassemblerN(MaquinaVirtual *mv,int ip, int n){
-    int ToperandoA,ToperandoB,operacion;
-    while (ip < mv.seg[mv.registros[(CS >> 16) & 0x0000000F]][1] && operacion != STOP && n > 0){
-        char instruccion = mv->ram[ip];
-        int dir = ip;
-        procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
-        lee_operandos2(ToperandoA,ToperandoB,mv, &ip); // lee los siguientes bytes de los operandos A y B y mueve el ip
-        escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir, operacion);
-        printf("\n");
-        n--;
-    }
-}
 
 //fin dissasembler.c
