@@ -71,7 +71,7 @@ const char* identificarMnemonico(int codigo){
     }
 }
 
-const char *identificaAreaReg(char reg[], int op;){
+const char *identificaAreaReg(char reg[], int op){
         int area = (op >> 6) & 0x00000003;
         char salida[] = "";
         switch(area){
@@ -79,15 +79,15 @@ const char *identificaAreaReg(char reg[], int op;){
                         strcpy(salida, reg);
                 break;
                 case 1:
-                        strcat(salida, reg[1]);
-                        strcat(salida, [2]);
+                        strcat(salida, &(reg[1]));
+                        strcat(salida, &(reg[2]));
                 break;
                 case 2:
-                        strcat(salida, reg[1]);
+                        strcat(salida, &(reg[1]));
                         strcat(salida, "H");
                 break;
                 case 3:
-                        strcat(salida, reg[1]);
+                        strcat(salida, &(reg[1]));
                         strcat(salida, "X");
                 break;
         }

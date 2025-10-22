@@ -227,7 +227,7 @@ void sys(int op, MaquinaVirtual *mv){
                              printf("salida: %d \n", salida);
                     }
                     else  if(get_valor_operando(op,mv) == 3){
-                        char cadena[];
+                        char cadena[100]; //no se q tamaño darle
                         scanf("%s", &cadena);
                         short int stringlen = (mv->registros[ECX] & 0x0000FFFF);
 

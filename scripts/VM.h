@@ -74,7 +74,7 @@
 typedef struct{
     int registros[REG];
     char  ram[MAXMEM];
-    short int seg[4][6];
+    short int seg[MAX][2];
     char vmiFileName[20];
     int MemSize;
  } MaquinaVirtual;
@@ -125,8 +125,8 @@ void imprimirBinarioCompacto(int n);
 void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv);
 void error_handler(int error);
 
-void lectura_arch(MaquinaVirtual *mv, short int *tamseg, char nombre_arch[]);
-void iniciaMV(MaquinaVirtual *mv, int codSize);
+void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP);
+void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg, int offsetEP);
 void step(MaquinaVirtual *mv);
 void leerBinario(int *entrada);
 
