@@ -1,6 +1,7 @@
 #include "VM.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 
@@ -226,8 +227,21 @@ void sys(int op, MaquinaVirtual *mv){
                              printf("salida: %d \n", salida);
                     }
                     else  if(get_valor_operando(op,mv) == 3){
-                       
-                        //Lectura de strings, hay que solucionar primero el tema de cx, ax, etc.
+                        char cadena[];
+                        scanf("%s", &cadena);
+                        short int stringlen = (mv->registros[ECX] & 0x0000FFFF);
+                        
+                        if(stringlen & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
+                            stringlen = stringlen | 0xFFFF0000;
+
+                        if(stringlen == -1)
+                            stringlen = strlen(cadena);
+
+                        for(int i = 0; i< stringlen; i++){
+                            mv->ram[direccionInicial + i] = cadena[i];
+                        }
+
+                        mv->ram[direccionInicial + stringlen] = '\0'; // agrego el caracter nulo al final
                     }
                     else if(get_valor_operando(op,mv) == 4){
                         int i = mv->registros[EDX];
@@ -516,7 +530,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], uns
         i = 0;
         if(!feof(arch)){
             fread(&num, sizeof(char), 1, arch);
-            while(!feof(arch) && i < *tamSeg){
+            while(!feof(arch) && i < *codeSeg){
                 (mv->ram)[i] = num;
                 i++;
                 fread(&num, sizeof(char), 1, arch);
@@ -527,7 +541,7 @@ void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], uns
 
 }
 
-void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg) { // codsize leido de la cabecera
+void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg, int offsetEP) { // codsize leido de la cabecera
     
     //inicio la tabla de segmentos y los registros punteros a los segmentos
     
@@ -535,9 +549,9 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
 
     
 
-    //inicializo el ip al principio del codigo
+    //inicializo el ip
 
-    mv->registros[IP] = mv->registros[CS];
+    mv->registros[IP] = mv->registros[CS] + offsetEP;
 
 }
 
@@ -709,14 +723,41 @@ int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_b
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
     if(valor & 0x00800000) // si el bit 23 del inmediato es 1, es negativo
-            valor = valor | 0xFF000000; // lo extiendo a 32 bits
-    
-    if(((operando>>24)&0x00000003) == 1 ){
-        mv->registros[(operando & 0x00FFFFFF)] = valor;
+            valor = valor | 0xFF000000; // lo extiendo a 32 bits  
+
+    if(((operando>>24) & 0x00000003) == 1 ){
+        int tipoReg = (operando & 0x000C) >> 2;
+        switch (tipoReg){
+            case 0: // registro de 4 bytes
+                mv->registros[(operando & 0x00FFFFFF)]= valor;
+                break;
+            case 1: // 4to byte
+                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFFFF00) | ((unsigned int)(valor & 0x000000FF));
+                break;
+            case 2: // 3er byte
+                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFF00FF) | ((unsigned int)(valor<<8 & 0x0000FF00));
+                break;
+            case 3: // 2 bytes menos significativos
+                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0xFFFF0000) | ((unsigned int)(valor & 0x0000FFFF));
+                break;
+            }
     }
     else{ 
         if((operando>>24)&0X00000003 == 3){
-            set_valor_mem((operando & 0x00FFFFFF),valor, mv);
+            switch((operando>>22)&0X00000003){
+                case 0: // long -> 4 bytes
+                    set_valor_mem((operando & 0x00FFFFFF),valor, mv,4);
+                    break;
+                case 2: // word -> 2 bytes 
+                    set_valor_mem((operando & 0x00FFFFFF),valor, mv,2);
+                    break;
+                case 3: // byte -> 1 byte
+                    set_valor_mem((operando & 0x00FFFFFF),valor, mv,1);
+                    break;
+                default:
+                    error_handler(INVINS);
+                    break;
+            }
         }
         else{
             // Error: intento asignar a un inmediato
@@ -770,7 +811,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
     }
 }
 
-void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
+void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes){
     // busco la direccion logica
     int aux=0;
     mv->registros[LAR] = get_logical_dir(*mv, operandoM);
@@ -785,14 +826,9 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv){
         error_handler(SEGFAULT);
     }
     else{
-        // 1er byte:
-        mv->ram[direccion]     = (valor >> 24) & 0x000000FF;
-        // 2do byte:
-        mv->ram[direccion + 1] = (valor >> 16) & 0x000000FF;
-        // 3er byte:
-        mv->ram[direccion + 2] = (valor >> 8)  & 0x000000FF;
-        // 4to byte:
-        mv->ram[direccion + 3] = valor & 0x000000FF;
+        for(int i = 0; i<cant_bytes; i++){
+            mv->ram[direccion + i] = (valor >> (8 * (3 - i))) & 0x000000FF;
+        }
     }
 }
 
@@ -864,9 +900,9 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
 
 
 // CHEQUEAR, NO HAY NINGUN TIPO DE CHANCE DE QUE ESTO ANDE
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], unsigned int *memoria, int *d, int *p, int *param, MaquinaVirtual *mv){
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *param, MaquinaVirtual *mv){
     int i;
-    *memoria = 16384; // valor por defecto
+    mv->MemSize = 16384; // valor por defecto
     *d = 0;
     *p = 0;
     vmx[0] = '\0';  
@@ -883,7 +919,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], unsigned i
             strcpy(vmi, argv[i]);
         } 
         else if (strncmp(argv[i], "m=", 2) == 0) {
-            *memoria = atoi(argv[i] + 2) * 1024;  // convertir KiB a bytes
+            mv->MemSize = atoi(argv[i] + 2) * 1024;  // convertir KiB a bytes
         } 
         else if (strcmp(argv[i], "-d") == 0) {
             *d = 1;
@@ -1036,28 +1072,37 @@ void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, FILE *arch){
 }
 
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
-    char inst; FILE *imagen;
 
-    imagen = fopen(vmiFileName, "wb");
-    escribeHeaderImg('1',16,imagen);
-    escribeRegistrosImg(*mv,imagen);
-    escribeTablaSegImg();
-    escribeMemoriaImg(*mv,16,imagen);
-    fclose(imagen);
-
+    char inst;
+    escribeImg(*mv, vmiFileName, '2', mv->MemSize / 1024);
     scanf('%c', &inst);
 
-    if(inst == 'q'){ // q-> corta la ejecucion habiendo guardado la imagen
+    while(inst == '\n' && mv->registros[IP] != -1){
+        step(mv);
+        escribeImg(*mv,vmiFileName,'2', mv->MemSize / 1024);
+        scanf('%c', &inst);
+    }
+    
+    if(inst == 'q' || mv->registros[IP] == -1){ // q-> corta la ejecucion habiendo guardado la imagen
         exit(0);
     }
     else if(inst == 'g'){ // g-> continua la ejecucion hasta que termine el programa o haya otro break point
         return;
     }
-    else if(inst == '\n'){ // enter -> ejecuta la siguiente ejecucion y realiza otro break point
-        step(mv);
-        breakPoint(mv,vmiFileName);
-    }
 }
+
+
+void iniciaPila(MaquinaVirtual *mv, int argc, int *argv){
+    push(argv, &mv);
+    push(argc, &mv);
+    int direccionRetorno =  -1 & 0xBFFFFFFF; //GUARDO EL TIPO DE OPERANDO (INMEDIATO) EN LOS 2 BITS MAS SIGNIFICATIVOS Y -1 EN EL RESTO DE BITS
+    push(direccionRetorno, &mv);
+
+}
+
+
+
+
 
 
 //fin vm.c

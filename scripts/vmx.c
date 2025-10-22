@@ -11,12 +11,31 @@ void main(int argC, char *argV[]){
 
     MaquinaVirtual mv;
     unsigned short int  codeSeg, dataSeg, extraSeg, stackSeg, constSeg, offsetEP,paramSeg;
+    char vmx[32];
+    char vmi[32];
+    unsigned int memoria;
+    int d, p;
     char fileName[SIZE];
     srand(time(NULL));
 
-    strcpy(fileName,argV[1]);
-    lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP);
-    iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg);
+    manejaArgumentos(argC, argV, vmx, vmi, &d, &p, &paramSeg, &mv);
+    if(vmx[0] != '\0'){
+        //viene un .vmx y puede venir o no un .vmi
+        strcpy(fileName,vmx);
+        lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP);
+        iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg, offsetEP);
+        iniciaPila(&mv, argC, argV);
+        
+    }else{
+        //SOLO VIENE UN ARCHIVO .VMI
+        leeImg(&mv, vmi);
+    }
+    
+    if(vmi[0] != '\0'){
+        
+    }
+
+
 
     if(strcmp(argV[3],"-d") == 0)
         disassembler(&mv, codeSeg);
@@ -24,7 +43,7 @@ void main(int argC, char *argV[]){
 
     do{
         step(&mv);
-    }while(mv.registros[IP] > -1 && mv.registros[IP]<);
+    }while(mv.registros[IP] > -1 && mv.registros[IP] < mv.registros[CS] + codeSeg);
 }
 //fin vmx.c
 
