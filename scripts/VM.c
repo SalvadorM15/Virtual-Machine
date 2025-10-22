@@ -230,7 +230,7 @@ void sys(int op, MaquinaVirtual *mv){
                         char cadena[];
                         scanf("%s", &cadena);
                         short int stringlen = (mv->registros[ECX] & 0x0000FFFF);
-                        
+
                         if(stringlen & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
                             stringlen = stringlen | 0xFFFF0000;
 
@@ -776,21 +776,48 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
     }
     else{
         if(((operando & 0x03000000)>>24)== 1 ){ // operando registro
-            resultado = mv->registros[(operando & 0x00FFFFFF)];
+             int tipoReg = (operando & 0x000C) >> 2;
+            switch (tipoReg){
+                case 0: // registro de 4 bytes
+                    resultado = mv->registros[(operando & 0x00FFFFFF)]
+                    break;
+                case 1: // 4to byte
+                    resultado = (mv->registros[(operando & 0x00FFFFFF)] &  0xFF000000) >> 24;
+                    break;
+                case 2: // 3er byte
+                    resultado = (mv->registros[(operando & 0x00FFFFFF)] &  0x00FF0000) >> 16;
+                case 3: // 2 bytes menos significativos
+                    resultado = mv->registros[(operando & 0x00FFFFFF)] &  0x0000FFFF;
+                    break;
+                }
         }
         else{ // operando memoria
-            if((operando & 0xFF000000)>>24 == 3)
-                resultado = get_valor_mem((operando & 0x00FFFFFF), mv);
+            if((operando & 0xFF000000)>>24 == 3){
+                switch((operando>>22)&0X00000003){
+                    case 0: // long -> 4 bytes
+                        resultado = get_valor_mem((operando & 0x00FFFFFF), mv,4);
+                        break;
+                    case 2: // word -> 2 bytes 
+                        resultado = get_valor_mem((operando & 0x00FFFFFF), mv,2);
+                        break;
+                    case 3: // byte -> 1 byte
+                        resultado = get_valor_mem((operando & 0x00FFFFFF), mv,1);
+                        break;
+                    default:
+                        error_handler(INVINS);
+                        break;
+                }
+            }
+                
         }
-         if(resultado & 0x00800000) // si el bit 23 del inmediato es 1, es negativo
-            resultado = resultado | 0xFF000000; // lo extiendo a 32 bits
+         
     
     }
     return resultado;
    
 }
 
-int get_valor_mem(int operandoM, MaquinaVirtual *mv){
+int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
 
 
     mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logica
@@ -799,14 +826,18 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv){
 
     int direccion = logical_to_physical(mv->registros[LAR], mv->seg , 4);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
-    mv->registros[MAR] +=(3<<30); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
+    mv->registros[MAR] |=(3<<30); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
     if(direccion == -1){
         error_handler(SEGFAULT);
         return -1;
     }
     else{
-        mv->registros[MBR] = (((mv->ram[direccion] << 24)&0xFF000000) | ((mv->ram[direccion + 1] << 16)&0x00FF0000) |  ((mv->ram[direccion + 2] << 8)&0x00000FF00) | ((mv->ram[direccion + 3]&0x000000FF)));
+        for(int i =0; i<cant_bytes; i++){
+            mv->registros[MBR] = (mv->registros[MBR] << 8) | (mv->ram[direccion + i]&0x000000FF);
+        }
+        if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
+            mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
         return mv->registros[MBR];
     }
 }
@@ -822,7 +853,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes)
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
     mv->registros[MAR] +=(4<<29); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
 
-    if(direccion == -1 || (direccion + 4) > mv->MemSize){
+    if(direccion == -1 || (direccion + cant_bytes) > mv->MemSize){
         error_handler(SEGFAULT);
     }
     else{
