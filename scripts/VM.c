@@ -335,7 +335,7 @@ void call(int operando, MaquinaVirtual *mv){
  }
 
  void ret(MaquinaVirtual *mv){
-    int direccion = get_valor_mem((mv->registros[SP]), mv);
+    int direccion = get_valor_mem((mv->registros[SP]), mv, 4);
     mv->registros[SP] += 4;
     if(mv->registros[SP] > mv->seg[SS][1] + mv->seg[SS][0])
         error_handler(STACKUNDER);
@@ -497,7 +497,7 @@ void error_handler(int error){
 
 
 
-void lectura_arch(MaquinaVirtual *mv, short int *tamSeg, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP){
+void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP){
     FILE *arch;
     char num,version;
     int i;
@@ -779,7 +779,7 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
              int tipoReg = (operando & 0x000C) >> 2;
             switch (tipoReg){
                 case 0: // registro de 4 bytes
-                    resultado = mv->registros[(operando & 0x00FFFFFF)]
+                    resultado = mv->registros[(operando & 0x00FFFFFF)];
                     break;
                 case 1: // 4to byte
                     resultado = (mv->registros[(operando & 0x00FFFFFF)] &  0xFF000000) >> 24;
@@ -931,7 +931,7 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
 
 
 // CHEQUEAR, NO HAY NINGUN TIPO DE CHANCE DE QUE ESTO ANDE
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *param, MaquinaVirtual *mv){
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, unsigned short int *param, MaquinaVirtual *mv){
     int i;
     mv->MemSize = 16384; // valor por defecto
     *d = 0;
@@ -1123,7 +1123,7 @@ void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 }
 
 
-void iniciaPila(MaquinaVirtual *mv, int argc, int *argv){
+void iniciaPila(MaquinaVirtual *mv, int argc, int argv[]){
     push(argv, &mv);
     push(argc, &mv);
     int direccionRetorno =  -1 & 0xBFFFFFFF; //GUARDO EL TIPO DE OPERANDO (INMEDIATO) EN LOS 2 BITS MAS SIGNIFICATIVOS Y -1 EN EL RESTO DE BITS

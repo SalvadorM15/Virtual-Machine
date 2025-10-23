@@ -24,7 +24,7 @@ void main(int argC, char *argV[]){
         strcpy(fileName,vmx);
         lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP);
         iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg, offsetEP);
-        iniciaPila(&mv, argC, argV);
+        iniciaPila(&mv, argC, *argV);
         
     }else{
         //SOLO VIENE UN ARCHIVO .VMI
