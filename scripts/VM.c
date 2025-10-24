@@ -263,7 +263,6 @@ void sys(int op, MaquinaVirtual *mv){
     }
 }
 void jmp(int op, MaquinaVirtual *mv){
-
     int proxIP = (get_valor_operando(op,mv))&0x0000ffff;
     if(proxIP < 0 || proxIP >= mv->seg[mv->registros[CS]][1] + 1)
         error_handler(SEGFAULT);
@@ -517,8 +516,9 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *co
         fread(version, sizeof(char), 1, arch);
         printf("\nVersion del archivo: %d \n", *version);
         fread(codeSeg,sizeof(short int),1,arch);
-        *codeSeg = (*codeSeg) >> 8;
-        printf("Tamanio segmento de codigo: %d \n", *codeSeg);
+
+        *codeSeg = (*codeSeg) >> 8; // por alguna razon lee 1 byte corrido a la izquierda
+
         //leo el tamanio de los segmentos de codigo
         if(*version == 2){
             fread(dataSeg,sizeof(unsigned short int),1,arch);
@@ -527,6 +527,8 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *co
             fread(constSeg,sizeof(unsigned short int),1,arch);
             fread(offsetEP,sizeof(unsigned short int),1,arch);
         }
+        else
+            *dataSeg = mv->MemSize - (*codeSeg);
         
         //comienza la lectura del codigo y lo almacena en la ram
         i = 0;
@@ -553,7 +555,6 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
     //inicializo el ip
 
     mv->registros[IP] = mv->registros[CS] + offsetEP;
-    printf("ip: %x",mv->registros[IP]);
 
 }
 
@@ -728,7 +729,7 @@ void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
             valor = valor | 0xFF000000; // lo extiendo a 32 bits  
 
     if(((operando>>24) & 0x00000003) == 1 ){
-        int tipoReg = (operando & 0x000C) >> 2;
+        int tipoReg = (operando & 0x00000000C0) >> 6;
         switch (tipoReg){
             case 0: // registro de 4 bytes
                 mv->registros[(operando & 0x00FFFFFF)]= valor;
@@ -778,7 +779,7 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
     }
     else{
         if(((operando & 0x03000000)>>24)== 1 ){ // operando registro
-             int tipoReg = (operando & 0x000C) >> 2;
+             int tipoReg = (operando & 0x00000000C0) >> 6;
             switch (tipoReg){
                 case 0: // registro de 4 bytes
                     resultado = mv->registros[(operando & 0x00FFFFFF)];
@@ -872,7 +873,6 @@ int creaDireccionLogica(int segmento, int offset){
     puntero = segmento;
     puntero = puntero << 16;
     puntero |= (offset && 0x0000FFFF);
-    printf("puntero: %x\n", puntero);
     return puntero;
 }
 
@@ -964,7 +964,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
         }
         if(*p == 1){
             //guardo el string del parametro en el param segment
-            for(int j = *paramSeg; i<= paramSeg + strlen(argv[i]) ; j++){
+            for(int j = *paramSeg; i<= *paramSeg + strlen(argv[i]) ; j++){
                 mv->ram[j] = (argv[i])[j];
             }
             argvMV[*argCMV] = *paramSeg;
@@ -977,7 +977,9 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
      //agrego los punteros a los argumentos al paramSegment
     if(*p == 1){
             for(i = 0; i<*argCMV; i++){
-                mv->ram[*paramSeg] = argvMV[i];
+                for(int j = 0; j<4; j++){
+                    mv->ram[*paramSeg + j] = (argvMV[i] >> (8 * (3 - j))) & 0x000000FF;
+                }
                 *paramSeg += 4; 
             }
         }
@@ -1146,12 +1148,12 @@ void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 
     char inst;
     escribeImg(*mv, vmiFileName, '2', mv->MemSize / 1024);
-    scanf('%c', &inst);
+    scanf("%c", &inst);
 
     while(inst == '\n' && mv->registros[IP] != -1){
         step(mv);
         escribeImg(*mv,vmiFileName,'2', mv->MemSize / 1024);
-        scanf('%c', &inst);
+        scanf("%c", &inst);
     }
     
     if(inst == 'q' || mv->registros[IP] == -1){ // q-> corta la ejecucion habiendo guardado la imagen

@@ -73,7 +73,7 @@ const char* identificarMnemonico(int codigo){
 
 const char *identificaAreaReg(char reg[], int op){
         int area = (op >> 6) & 0x00000003;
-        char salida[] = "";
+        char *salida = malloc(4*sizeof(char));
         switch(area){
                 case 0:
                         strcpy(salida, reg);
