@@ -329,7 +329,7 @@ void pop(int operando, MaquinaVirtual *mv){
         error_handler(STACKUNDER);
     else{
         //LEO DE MEMORIA EL VALOR GUARDADO EN LA PILA
-        valor = get_valor_mem(mv->registros[SP],mv);
+        valor = get_valor_mem(mv->registros[SP],mv, 4);
 
         //ACTUALIZO EL REGISTRO SP
         mv->registros[SP] +=4;
@@ -897,6 +897,11 @@ int creaDireccionLogica(int segmento, int offset){
 
 void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int extra, int stack, int constant){
     int i = 0;
+    for(i = 0; i < 8; i++){
+        mv->seg[i][0] = -1;
+        mv->seg[i][1] = -1;
+    }
+    i = 0;
     int offset = 0;
     mv->registros[PS] = -1;
     mv->registros[CS] = -1;
@@ -911,6 +916,13 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
         mv->registros[PS] = creaDireccionLogica(i, 0); // inicializo el puntero de ParamSegment al comienzo del segmento de parametros
         offset += param;
     }
+    if(constant > 0){
+        mv->seg[i][0] = offset;
+        mv->seg[i][1] = constant;
+        mv->registros[KS] = offset; // inicializo el puntero de ConstantSegment al comienzo del segmento de constantes
+        i++;
+        offset += constant;
+    }    
     if(code > 0){
         mv->seg[i][0] = offset;
         mv->seg[i][1] = code;
@@ -940,13 +952,6 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
         i++;
         offset += stack;
         
-    }
-    if(constant > 0){
-        mv->seg[i][0] = offset;
-        mv->seg[i][1] = constant;
-        mv->registros[KS] = offset; // inicializo el puntero de ConstantSegment al comienzo del segmento de constantes
-        i++;
-        offset += constant;
     }
 }
 
@@ -1019,7 +1024,7 @@ void leeImg(MaquinaVirtual *mv, char vmi[]){
     FILE *arch;
     int tamMem;
     char version;
-
+    
     arch = fopen(vmi, "rb");
     if(arch){
         leeHeaderImg(&version, &tamMem, arch);
@@ -1032,10 +1037,12 @@ void leeImg(MaquinaVirtual *mv, char vmi[]){
         printf("NO SE PUDO ABRIR EL ARCHIVO .vmi \n");
         error_handler(NOFILE);
     }
-
+    
 }
 
-void leeHeaderImg(char *version, int *tamMem, FILE *arch){
+
+
+void leeHeaderImg(char *version, short int *tamMem, FILE *arch){
     char car;
     int i;
     //IMPRIME LA VERSION
@@ -1079,7 +1086,7 @@ void leeTablaSegmentosImg(MaquinaVirtual *mv, FILE *arch){
     }
 }
 
-void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, int tamMem){
+void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, short int tamMem){
     int i;
     char elem;
     //LEE LA MEMORIA DE LA IMAGEN Y LA GUARDA EN LA MAQUINA VIRTUAL BYTE A BYTE
@@ -1089,9 +1096,13 @@ void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, int tamMem){
     }
 }
 
+
+
+
 //--------------- ESCRITURA ---------------
 
 void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
+    //tamMem EN KiB
     FILE *arch;
     arch = fopen(vmi, "wb");
     if(arch){
@@ -1151,7 +1162,8 @@ void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]){
     int i;
     FILE *arch = fopen(vmi, "ab");
     //ESCRIBO CADA BYTE DE LA RAM EN EL ARCHIVO .vmi
-    for(i = 0; i < tamMem; i++){
+
+    for(i = 0; i < tamMem *1024; i++){
         fwrite(&(mv.ram[i]), sizeof(char), 1, arch);
     }
 
@@ -1170,12 +1182,17 @@ void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
         scanf("%c", &inst);
     }
     
+    for(int i = mv->seg[mv->registros[CS] >> 16][0]; i < mv->seg[mv->registros[CS] >> 16][1]; i++){
+        printf("%x ", mv->ram[i]);
+    }
+
     if(inst == 'q' || mv->registros[IP] == -1){ // q-> corta la ejecucion habiendo guardado la imagen
         exit(0);
     }
     else if(inst == 'g'){ // g-> continua la ejecucion hasta que termine el programa o haya otro break point
         return;
     }
+
 }
 
 

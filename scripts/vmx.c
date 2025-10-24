@@ -35,16 +35,25 @@ void main(int argC, char *argV[]){
     }else{
         //SOLO VIENE UN ARCHIVO .VMI
         leeImg(&mv, vmi);
+        for(int i = mv.seg[mv.registros[CS] >> 16][0]; i < mv.seg[mv.registros[CS] >> 16][1]; i++){
+            printf("%x ", mv.ram[i]);
+        }
     }
     
+    /*
     if(vmi[0] != '\0'){
         strcpy(mv.vmiFileName,vmi);
         printf("entre en leeImg\n");
     }
-    
+    */
+
+
+
     if(d == 1){
         disassembler(&mv, mv.seg[mv.registros[CS] >> 16][1]);
     }
+   
+
 
     do{
         //printf("IP: %x\n", mv.registros[IP]);

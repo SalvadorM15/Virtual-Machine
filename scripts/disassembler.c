@@ -210,8 +210,9 @@ void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip){
 
     for(i = ((*ip)+1); i < ((*ip) + topA+1); i++){
         mv->registros[OP1] = ((mv->registros[OP1]) << 8);
-        mv->registros[OP1] |= mv->ram[i]&0x000000FF;
-    }
+        mv->registros[OP1] |= mv->ram[i] & 0x000000FF;
+        printf("%x", mv->ram[i]);
+    }   
     if(topA == 2){
         if(mv->registros[OP1] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
             mv->registros[OP1] = mv->registros[OP1] | 0x00FF0000; // lo extiendo a 32 bits
@@ -231,13 +232,16 @@ if (flag_disassembler){
 
 
 void disassembler(MaquinaVirtual *mv, short int tamSeg){
-    int ToperandoA,ToperandoB,operacion, ip;
-    ip = mv->registros[IP];
-    while (ip < tamSeg && operacion != STOP){
+    int ToperandoA,ToperandoB,operacion;
+    short int ip;
+    ip = mv->seg[mv->registros[CS] >> 16][0];
+    while (ip < mv->seg[mv->registros[CS] >> 16][1] && operacion != STOP){
         char instruccion = mv->ram[ip];
         int dir = ip;
         procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
+        //HASTA ACA TODO BIEN
         lee_operandos2(ToperandoA,ToperandoB,mv, &ip); // lee los siguientes bytes de los operandos A y B y mueve el ip
+        // EL ERROR ESTA EN LEE OPERANDOS 2.
         escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir, operacion);
         printf("\n");
     }
