@@ -322,6 +322,23 @@ void push(int operando,MaquinaVirtual *mv){
     }
 }
 
+void pop(int operando, MaquinaVirtual *mv){
+    int valor;
+    //CHEQUEO QUE NO HAYA STACK UNDERFLOW
+    if(mv->registros[SP] >= mv->registros[SS])
+        error_handler(STACKUNDER);
+    else{
+        //LEO DE MEMORIA EL VALOR GUARDADO EN LA PILA
+        valor = get_valor_mem(mv->registros[SP],mv);
+
+        //ACTUALIZO EL REGISTRO SP
+        mv->registros[SP] +=4;
+
+        //GUARDO EN EL OPERANDO EL VALOR LEIDO DE LA PILA
+        set_valor_operando(operando,valor,mv);
+    }
+}
+
 void call(int operando, MaquinaVirtual *mv){
     //CALL ES COMO HACER PUSH IP Y HACER JMP A LA SUBRUTINA DEL OPERANDO
     push(mv->registros[IP], mv);
@@ -1005,11 +1022,10 @@ void leeImg(MaquinaVirtual *mv, char vmi[]){
 
     arch = fopen(vmi, "rb");
     if(arch){
-        fclose(arch);
-        leeHeaderImg(&version, &tamMem, vmi);
-        leeRegistrosImg(mv, vmi);
-        leeTablaSegmentosImg(mv, vmi);
-        leeMemoriaImg(mv, vmi, tamMem);
+        leeHeaderImg(&version, &tamMem, arch);
+        leeRegistrosImg(mv, arch);
+        leeTablaSegmentosImg(mv, arch);
+        leeMemoriaImg(mv, arch, tamMem);
         fclose(arch);
     }
     else{
@@ -1019,10 +1035,9 @@ void leeImg(MaquinaVirtual *mv, char vmi[]){
 
 }
 
-void leeHeaderImg(char *version, int *tamMem, char vmi[]){
+void leeHeaderImg(char *version, int *tamMem, FILE *arch){
     char car;
     int i;
-    FILE *arch = fopen(vmi, "rb");
     //IMPRIME LA VERSION
     for(i = 0; i < 5; i++){
         fread(&car, sizeof(char), 1, arch);
@@ -1031,32 +1046,30 @@ void leeHeaderImg(char *version, int *tamMem, char vmi[]){
     printf("\n");
     
     // LEE LA VERSION
-    fread(version, sizeof(char), 1, arch); 
+    fread(version, sizeof(char), 1, arch);
+    printf("VERSION: %d\n", *version); 
     
     // LEE EL TAMAÑO DE MEMORIA EN KiB
-    fread(tamMem, sizeof(short int), 1, arch); 
+    fread(tamMem, sizeof(short int), 1, arch);
+    printf("MEMORIA: %d KiB\n", *tamMem);
     
     //PASO A BYTES
     *tamMem = (*tamMem) * 1024; 
-    fclose(arch);
 }
 
-void leeRegistrosImg(MaquinaVirtual *mv, char vmi[]){
+void leeRegistrosImg(MaquinaVirtual *mv, FILE *arch){
     int i;
     int reg;
-    FILE *arch = fopen(vmi, "rb");
     //LEE EL VALOR DEL REIGSTRO i Y LO GUARDA EN LA MAQUINA VIRTUAL
     for(i = 0; i < 32; i++){
         fread(&reg, sizeof(int), 1, arch);
         mv->registros[i] = reg;
     }
-    fclose(arch);
 }
 
-void leeTablaSegmentosImg(MaquinaVirtual *mv, char vmi[]){
+void leeTablaSegmentosImg(MaquinaVirtual *mv, FILE *arch){
     int i;
     short int segBase, segLimit;
-    FILE *arch = fopen(vmi, "rb");
     //LEE CADA SEGMENTO (BASE Y LIMITE) Y LO GUARDA EN LA MAQUINA VIRTUAL
     for(i=0; i<8; i++){
         fread(&segBase, sizeof(short int), 1, arch);
@@ -1064,19 +1077,16 @@ void leeTablaSegmentosImg(MaquinaVirtual *mv, char vmi[]){
         mv->seg[i][0] = segBase;
         mv->seg[i][1] = segLimit;
     }
-    fclose(arch);
 }
 
-void leeMemoriaImg(MaquinaVirtual *mv, char vmi[], int tamMem){
+void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, int tamMem){
     int i;
     char elem;
-    FILE *arch = fopen(vmi, "rb");
     //LEE LA MEMORIA DE LA IMAGEN Y LA GUARDA EN LA MAQUINA VIRTUAL BYTE A BYTE
     for(i = 0; i<tamMem; i++){
         fread(&elem, sizeof(char), 1, arch);
         mv->ram[i] = elem;
     }
-    fclose(arch);
 }
 
 //--------------- ESCRITURA ---------------
@@ -1151,12 +1161,12 @@ void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]){
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 
     char inst;
-    escribeImg(*mv, vmiFileName, '2', mv->MemSize / 1024);
+    escribeImg(*mv, vmiFileName, 2, mv->MemSize / 1024);
     scanf("%c", &inst);
 
     while(inst == '\n' && mv->registros[IP] != -1){
         step(mv);
-        escribeImg(*mv,vmiFileName,'2', mv->MemSize / 1024);
+        escribeImg(*mv,vmiFileName,2, mv->MemSize / 1024);
         scanf("%c", &inst);
     }
     
