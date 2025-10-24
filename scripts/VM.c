@@ -255,7 +255,6 @@ void sys(int op, MaquinaVirtual *mv){
                         system("clear");
                     }
                     else if(get_valor_operando(op,mv) == 0xf){
-                        printf("Ejecutando breakpoint en el archivo: %s\n", mv->vmiFileName);
                         breakPoint(mv,mv->vmiFileName);
                     }
                         
@@ -1091,7 +1090,6 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
         escribeRegistrosImg(mv, vmi);
         escribeTablaSegImg(mv, vmi);
         escribeMemoriaImg(mv, tamMem, vmi);
-        fclose(arch);
     }
     else{
         printf("NO SE PUDO ABRIR EL ARCHIVO .vmi");
@@ -1103,7 +1101,7 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
 
 void escribeHeaderImg(char version, short int tamMem, char vmi[]){
     char identificador[] = "VMI25";
-    FILE *arch = fopen(vmi, "rb");
+    FILE *arch = fopen(vmi, "ab");
     //ESCRIBOEL IDENTIFICADOR
     fwrite(identificador, sizeof(char), strlen(identificador), arch);
     
@@ -1118,7 +1116,7 @@ void escribeHeaderImg(char version, short int tamMem, char vmi[]){
 
 void escribeRegistrosImg(MaquinaVirtual mv, char vmi[]){
     int i;
-    FILE *arch = fopen(vmi, "rb");
+    FILE *arch = fopen(vmi, "ab");
     //POR CADA REGISTRO ESCRIBO SUS 4 BYTES EN EL ARCHIVO
     for(i = 0; i < 32; i++){
         fwrite(&(mv.registros[i]), sizeof(int), 1, arch);
@@ -1128,22 +1126,25 @@ void escribeRegistrosImg(MaquinaVirtual mv, char vmi[]){
 
 void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]){
     int i;
-    FILE *arch = fopen(vmi, "rb");
+    FILE *arch = fopen(vmi, "ab");
     for(i=0; i<8; i++){
-        fwrite(mv.seg[i][0], sizeof(short int), 1, arch);
-        fwrite(mv.seg[i][1], sizeof(short int), 1, arch);
+        fwrite(&(mv.seg[i][0]), sizeof(short int), 1, arch);
+        fwrite(&(mv.seg[i][1]), sizeof(short int), 1, arch);
+
     }
+
     fclose(arch);
 
 }
 
 void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]){
     int i;
-    FILE *arch = fopen(vmi, "rb");
+    FILE *arch = fopen(vmi, "ab");
     //ESCRIBO CADA BYTE DE LA RAM EN EL ARCHIVO .vmi
     for(i = 0; i < tamMem; i++){
         fwrite(&(mv.ram[i]), sizeof(char), 1, arch);
     }
+
     fclose(arch);
 }
 

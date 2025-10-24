@@ -5,4 +5,6 @@ mov eax, 0
 ldl ecx, 1
 ldh ecx, 4
 sys 15
+mov edx, 7
+mov eax, 1
 stop
