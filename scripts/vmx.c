@@ -36,6 +36,7 @@ void main(int argC, char *argV[]){
     }
 
     if(vmi[0] != '\0'){
+        strcpy(mv.vmiFileName,vmi);
         printf("entre en leeImg\n");
     }
 

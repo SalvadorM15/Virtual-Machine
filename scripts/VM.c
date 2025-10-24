@@ -255,6 +255,7 @@ void sys(int op, MaquinaVirtual *mv){
                         system("clear");
                     }
                     else if(get_valor_operando(op,mv) == 0xf){
+                        printf("Ejecutando breakpoint en el archivo: %s\n", mv->vmiFileName);
                         breakPoint(mv,mv->vmiFileName);
                     }
                         
