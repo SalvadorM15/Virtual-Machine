@@ -490,7 +490,7 @@ void error_handler(int error){
 
 
 
-//--------------------------------------------------FUNCIIONES PRINCIPALES DE LA MAQUINA VIRTUAL-----------------------------------------------------------------------------
+//--------------------------------------------------FUNCIONES PRINCIPALES DE LA MAQUINA VIRTUAL-----------------------------------------------------------------------------
 
 
 
@@ -554,7 +554,7 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
 
     //inicializo el ip
 
-    mv->registros[IP] = mv->registros[CS] + offsetEP;
+    mv->registros[IP] = logical_to_physical(mv->registros[CS] | offsetEP, mv->seg, codeSeg,4);
 
 }
 
@@ -690,11 +690,11 @@ int get_logical_dir(MaquinaVirtual mv, int operandoM){ //funcion creada para obt
     return direccion;
 }
 
-int logical_to_physical(int logical_dir ,short int seg_table[MAX][2], int cant_bytes){ // funcion para pasar una direccion logica a una fisica
+int logical_to_physical(int logical_dir ,short int seg_table[8][2], int cant_bytes){ // funcion para pasar una direccion logica a una fisica
     int physical_dir;
     int segment =((logical_dir >> 16) & 0x0000FFFF);
     int segment_limit = seg_table[segment][0] + seg_table[segment][1];
-    if(segment < MAX){
+    if(segment < 8){
         physical_dir = seg_table[segment][0];
         physical_dir += (logical_dir & 0x0000FFFF);
         if(physical_dir > segment_limit || physical_dir + cant_bytes > segment_limit || physical_dir < seg_table[segment][0])
@@ -942,6 +942,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
     vmx[0] = '\0';  
     vmi[0] = '\0';
     *paramSeg = 0;
+    *argCMV = 0; 
     if(argc < 2){
         error_handler(NOFILE);
     }
@@ -959,8 +960,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
             *d = 1;
         } 
         else if (strcmp(argv[i], "-p") == 0 && vmx[0] != '\0') {
-            *p = 1;  
-            *argCMV = 0;         
+            *p = 1;          
         }
         if(*p == 1){
             //guardo el string del parametro en el param segment
