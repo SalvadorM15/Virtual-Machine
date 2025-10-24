@@ -313,6 +313,8 @@ void push(int operando,MaquinaVirtual *mv){
     //SI HABIA LUGAR:
     else{
         //GUARDO EN valor EL VALOR DEL OPERANDO (VALOR A GUARDAR EN LA PILA) CONVERTIDO A 4 BYTES (CHEQUEAR)
+        printf("guardo: %x\n", get_valor_operando(operando,mv));
+        printf("direccion SP: %x\n", mv->registros[SP]);
         set_valor_operando(operando,mv->registros[SP],mv);
 
         //GUARDAR valor EN MEMORIA
@@ -554,14 +556,14 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
 
     //inicializo el ip
 
-    mv->registros[IP] = logical_to_physical(mv->registros[CS] | offsetEP, mv->seg, codeSeg,4);
+    mv->registros[IP] = logical_to_physical(mv->registros[CS] | offsetEP, mv->seg,4);
+    printf("IP inicial: %x\n", mv->registros[IP]);
 
 }
 
 void step(MaquinaVirtual *mv){
 
     //primer paso: leer la instruccion del registro IP
-
     int ToperandoA,ToperandoB,operacion;
     char instruccion = mv->ram[mv->registros[IP]];
 

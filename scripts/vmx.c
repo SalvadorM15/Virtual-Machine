@@ -25,8 +25,11 @@ void main(int argC, char *argV[]){
         strcpy(fileName,vmx);
         lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP, &version);
         iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg, offsetEP);
-        iniciaPila(&mv, argcMV, argvMV);
+        if(argcMV > 0){
+            iniciaPila(&mv, argcMV, argvMV);
+        }
         
+        printf("fin inicia PIla\n");
     }else{
         //SOLO VIENE UN ARCHIVO .VMI
         leeImg(&mv, vmi);
