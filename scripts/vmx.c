@@ -14,17 +14,22 @@ void main(int argC, char *argV[]){
     char vmx[32];
     char vmi[32];
     unsigned int memoria;
-    int d, p;
+    int d, p, version,cantPar, argcMV, argvMV[100];
     char fileName[SIZE];
     srand(time(NULL));
 
-    manejaArgumentos(argC, argV, vmx, vmi, &d, &p, &paramSeg, &mv);
+    manejaArgumentos(argC, argV, vmx, vmi, &d, &p, &argcMV, argvMV, &paramSeg &mv);
+    printf(".vmx: %s\n", vmx);
+    printf(".vmi: %s\n", vmi);
+    printf("dissasembler: %d\n", d);
+
     if(vmx[0] != '\0'){
         //viene un .vmx y puede venir o no un .vmi
         strcpy(fileName,vmx);
-        lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP);
+        lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP, &version);
         iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg, offsetEP);
-        iniciaPila(&mv, argC, *argV);
+        if(version == 2)
+            iniciaPila(&mv, argcMV, argvMV);
         
     }else{
         //SOLO VIENE UN ARCHIVO .VMI
@@ -35,13 +40,13 @@ void main(int argC, char *argV[]){
         
     }
 
-
-
-    if(strcmp(argV[3],"-d") == 0)
+    if(d == 1){
+        printf("entre en el disassembler");
         disassembler(&mv, codeSeg);
-
+    }
 
     do{
+        printf("ejecuto 1 paso\n");
         step(&mv);
     }while(mv.registros[IP] > -1 && mv.registros[IP] < mv.registros[CS] + codeSeg);
 }

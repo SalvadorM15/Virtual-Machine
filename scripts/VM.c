@@ -189,7 +189,7 @@ void sys(int op, MaquinaVirtual *mv){
                     }
                     case 1: scanf("%d" , &entrada);
                             break;
-                    default: error_handler(INVINS);
+                    default: //error_handler(INVINS);
                              break;
                     }
                     // 1er byte:
@@ -307,7 +307,7 @@ void push(int operando,MaquinaVirtual *mv){
 
     //HAGO LUGAR PARA GUARDAR EN LA PILA
     mv->registros[SP] -= 4;
-
+    printf("entro en el push\n");
     //SI NO HABIA LUGAR, STACK OVERFLOW
     if(mv->registros[SP] < mv->registros[SS])
         error_handler(STACKOVER);
@@ -497,9 +497,9 @@ void error_handler(int error){
 
 
 
-void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP){
+void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, int *version){
     FILE *arch;
-    char num,version;
+    char num;
     int i;
     *dataSeg=0,*extraSeg=0,*stackSeg=0,*constSeg=0,*offsetEP=0;
     arch = fopen(nombre_arch, "rb");
@@ -514,18 +514,20 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *co
             i++;
         }
         //leo un byte de la version
-        fread(&version, sizeof(char), 1, arch);
-        printf("\nVersion del archivo: %d \n", version);
-        fread(codeSeg,sizeof(unsigned short int),1,arch);
+        fread(version, sizeof(char), 1, arch);
+        printf("\nVersion del archivo: %d \n", *version);
+        fread(codeSeg,sizeof(short int),1,arch);
+        *codeSeg = (*codeSeg) >> 8;
+        printf("Tamanio segmento de codigo: %d \n", *codeSeg);
         //leo el tamanio de los segmentos de codigo
-        if(version == 2){
+        if(*version == 2){
             fread(dataSeg,sizeof(unsigned short int),1,arch);
             fread(extraSeg,sizeof(unsigned short int),1,arch);
             fread(stackSeg,sizeof(unsigned short int),1,arch);
             fread(constSeg,sizeof(unsigned short int),1,arch);
             fread(offsetEP,sizeof(unsigned short int),1,arch);
         }
-
+        
         //comienza la lectura del codigo y lo almacena en la ram
         i = 0;
         if(!feof(arch)){
@@ -546,12 +548,12 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
     //inicio la tabla de segmentos y los registros punteros a los segmentos
     
     creaTablaSegmentos(mv,paramSeg,codeSeg,dataSeg,extraSeg,stackSeg,constSeg);
-
     
 
     //inicializo el ip
 
     mv->registros[IP] = mv->registros[CS] + offsetEP;
+    printf("ip: %x",mv->registros[IP]);
 
 }
 
@@ -870,6 +872,7 @@ int creaDireccionLogica(int segmento, int offset){
     puntero = segmento;
     puntero = puntero << 16;
     puntero |= (offset && 0x0000FFFF);
+    printf("puntero: %x\n", puntero);
     return puntero;
 }
 
@@ -931,14 +934,14 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
 
 
 // CHEQUEAR, NO HAY NINGUN TIPO DE CHANCE DE QUE ESTO ANDE
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, unsigned short int *param, MaquinaVirtual *mv){
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argCMV, int argvMV[], unsigned short int *paramSeg, MaquinaVirtual *mv){
     int i;
     mv->MemSize = 16384; // valor por defecto
     *d = 0;
     *p = 0;
     vmx[0] = '\0';  
     vmi[0] = '\0';
-    *param = 0;
+    *paramSeg = 0;
     if(argc < 2){
         error_handler(NOFILE);
     }
@@ -956,17 +959,28 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
             *d = 1;
         } 
         else if (strcmp(argv[i], "-p") == 0 && vmx[0] != '\0') {
-            *p = 1;            
+            *p = 1;  
+            *argCMV = 0;         
         }
-        else if(*p == 1){
-            int par = atoi(argv[i]);
-            for(int j = 0; j < 4; j++){
-                mv->ram[*param] = (par >> (24 - (j * 8))) & 0x000000FF;
-                (*param)++;
+        if(*p == 1){
+            //guardo el string del parametro en el param segment
+            for(int j = *paramSeg; i<= paramSeg + strlen(argv[i]) ; j++){
+                mv->ram[j] = (argv[i])[j];
             }
+            argvMV[*argCMV] = *paramSeg;
+            // incremento la cantidad de argumentos ingresados
+            (*argCMV)++;
+            //aumento el tamanio del paramSegment en el tamanio del argumento ingresado
+            *paramSeg += strlen(argv[i]);
         }        
     }
-
+     //agrego los punteros a los argumentos al paramSegment
+    if(*p == 1){
+            for(i = 0; i<*argCMV; i++){
+                mv->ram[*paramSeg] = argvMV[i];
+                *paramSeg += 4; 
+            }
+        }
     if(vmx[0] == '\0' && vmi[0] == '\0'){
         error_handler(NOFILE);
     }
@@ -987,10 +1001,11 @@ void leeImg(MaquinaVirtual *mv, char vmi[]){
 
     arch = fopen(vmi, "rb");
     if(arch){
-        leeHeaderImg(&version, &tamMem, arch);
-        leeRegistrosImg(mv, arch);
-        leeTablaSegmentosImg(mv, arch);
-        leeMemoriaImg(mv, arch, tamMem);
+        fclose(arch);
+        leeHeaderImg(&version, &tamMem, vmi);
+        leeRegistrosImg(mv, vmi);
+        leeTablaSegmentosImg(mv, vmi);
+        leeMemoriaImg(mv, vmi, tamMem);
         fclose(arch);
     }
     else{
@@ -1000,9 +1015,10 @@ void leeImg(MaquinaVirtual *mv, char vmi[]){
 
 }
 
-void leeHeaderImg(char *version, int *tamMem, FILE *arch){
+void leeHeaderImg(char *version, int *tamMem, char vmi[]){
     char car;
     int i;
+    FILE *arch = fopen(vmi, "rb");
     //IMPRIME LA VERSION
     for(i = 0; i < 5; i++){
         fread(&car, sizeof(char), 1, arch);
@@ -1018,32 +1034,45 @@ void leeHeaderImg(char *version, int *tamMem, FILE *arch){
     
     //PASO A BYTES
     *tamMem = (*tamMem) * 1024; 
-
+    fclose(arch);
 }
 
-void leeRegistrosImg(MaquinaVirtual *mv, FILE *arch){
+void leeRegistrosImg(MaquinaVirtual *mv, char vmi[]){
     int i;
     int reg;
-    
+    FILE *arch = fopen(vmi, "rb");
     //LEE EL VALOR DEL REIGSTRO i Y LO GUARDA EN LA MAQUINA VIRTUAL
     for(i = 0; i < 32; i++){
         fread(&reg, sizeof(int), 1, arch);
         mv->registros[i] = reg;
     }
+    fclose(arch);
 }
 
-void leeTablaSegmentosImg(MaquinaVirtual *mv, FILE *arch){
-
+void leeTablaSegmentosImg(MaquinaVirtual *mv, char vmi[]){
+    int i;
+    short int segBase, segLimit;
+    FILE *arch = fopen(vmi, "rb");
+    //LEE CADA SEGMENTO (BASE Y LIMITE) Y LO GUARDA EN LA MAQUINA VIRTUAL
+    for(i=0; i<8; i++){
+        fread(&segBase, sizeof(short int), 1, arch);
+        fread(&segLimit, sizeof(short int), 1, arch);
+        mv->seg[i][0] = segBase;
+        mv->seg[i][1] = segLimit;
+    }
+    fclose(arch);
 }
 
-void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, int tamMem){
+void leeMemoriaImg(MaquinaVirtual *mv, char vmi[], int tamMem){
     int i;
     char elem;
+    FILE *arch = fopen(vmi, "rb");
     //LEE LA MEMORIA DE LA IMAGEN Y LA GUARDA EN LA MAQUINA VIRTUAL BYTE A BYTE
     for(i = 0; i<tamMem; i++){
         fread(&elem, sizeof(char), 1, arch);
         mv->ram[i] = elem;
     }
+    fclose(arch);
 }
 
 //--------------- ESCRITURA ---------------
@@ -1052,10 +1081,11 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
     FILE *arch;
     arch = fopen(vmi, "wb");
     if(arch){
-        escribeHeaderImg(version, tamMem, arch);
-        escribeRegistrosImg(mv, arch);
-        escribeTablaSegImg();
-        escribeMemoriaImg(mv, tamMem, arch);
+        fclose(arch);
+        escribeHeaderImg(version, tamMem, vmi);
+        escribeRegistrosImg(mv, vmi);
+        escribeTablaSegImg(mv, vmi);
+        escribeMemoriaImg(mv, tamMem, vmi);
         fclose(arch);
     }
     else{
@@ -1066,9 +1096,9 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
 
 }
 
-void escribeHeaderImg(char version, short int tamMem, FILE *arch){
+void escribeHeaderImg(char version, short int tamMem, char vmi[]){
     char identificador[] = "VMI25";
-    
+    FILE *arch = fopen(vmi, "rb");
     //ESCRIBOEL IDENTIFICADOR
     fwrite(identificador, sizeof(char), strlen(identificador), arch);
     
@@ -1077,29 +1107,39 @@ void escribeHeaderImg(char version, short int tamMem, FILE *arch){
     
     //ESCRIBO EL TAMANO EN KiB
     fwrite(&tamMem, sizeof(short int), 1, arch);
+    fclose(arch);
 
 }
 
-void escribeRegistrosImg(MaquinaVirtual mv, FILE *arch){
+void escribeRegistrosImg(MaquinaVirtual mv, char vmi[]){
     int i;
-
+    FILE *arch = fopen(vmi, "rb");
     //POR CADA REGISTRO ESCRIBO SUS 4 BYTES EN EL ARCHIVO
     for(i = 0; i < 32; i++){
         fwrite(&(mv.registros[i]), sizeof(int), 1, arch);
     }
+    fclose(arch);
 }
 
-void escribeTablaSegImg(){
-
-}
-
-void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, FILE *arch){
+void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]){
     int i;
+    FILE *arch = fopen(vmi, "rb");
+    for(i=0; i<8; i++){
+        fwrite(mv.seg[i][0], sizeof(short int), 1, arch);
+        fwrite(mv.seg[i][1], sizeof(short int), 1, arch);
+    }
+    fclose(arch);
 
+}
+
+void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]){
+    int i;
+    FILE *arch = fopen(vmi, "rb");
     //ESCRIBO CADA BYTE DE LA RAM EN EL ARCHIVO .vmi
     for(i = 0; i < tamMem; i++){
         fwrite(&(mv.ram[i]), sizeof(char), 1, arch);
     }
+    fclose(arch);
 }
 
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){

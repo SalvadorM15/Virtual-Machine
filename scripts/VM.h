@@ -74,7 +74,7 @@
 typedef struct{
     int registros[REG];
     char  ram[MAXMEM];
-    short int seg[MAX][2];
+    short int seg[8][2];
     char vmiFileName[20];
     int MemSize;
  } MaquinaVirtual;
@@ -125,7 +125,7 @@ void imprimirBinarioCompacto(int n);
 void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv);
 void error_handler(int error);
 
-void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP);
+void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, int *version);
 void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg, int offsetEP);
 void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int extra, int stack, int constant);
 void step(MaquinaVirtual *mv);
@@ -140,20 +140,20 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg);
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv);
 int get_valor_operando(int operando, MaquinaVirtual *mv);
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, unsigned short int *param, MaquinaVirtual *mv);
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argcMV, int argvMV[], unsigned short int *param, MaquinaVirtual *mv);
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]);
 
 void leeImg(MaquinaVirtual *mv, char vmi[]);
-void leeHeaderImg(char *version, int *tamMem, FILE *arch);
-void leeRegistrosImg(MaquinaVirtual *mv, FILE *arch);
-void leeTablaSegmentosImg(MaquinaVirtual *mv, FILE *arch);
-void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, int tamMem);
+void leeHeaderImg(char *version, int *tamMem, char vmi[]);
+void leeRegistrosImg(MaquinaVirtual *mv, char vmi[]);
+void leeTablaSegmentosImg(MaquinaVirtual *mv, char vmi[]);
+void leeMemoriaImg(MaquinaVirtual *mv, char vmi[], int tamMem);
 
 void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem);
-void escribeHeaderImg(char version, short int tamMem, FILE *arch);
-void escribeRegistrosImg(MaquinaVirtual mv, FILE *arch);
-void escribeTablaSegImg();
-void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, FILE *arch);
+void escribeHeaderImg(char version, short int tamMem, char vmi[]);
+void escribeRegistrosImg(MaquinaVirtual mv, char vmi[]);
+void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]);
+void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]);
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]);
 void iniciaPila(MaquinaVirtual *mv, int argc, int argv[]);
 
