@@ -20,6 +20,8 @@ void main(int argC, char *argV[]){
     argcMV = 0;
     argvMV = -1;
     manejaArgumentos(argC, argV, vmx, vmi, &d, &p, &argcMV, argvMV, &paramSeg, &mv);
+
+    
     if(vmx[0] != '\0'){
         //viene un .vmx y puede venir o no un .vmi
         strcpy(fileName,vmx);
@@ -37,9 +39,14 @@ void main(int argC, char *argV[]){
     printf("Listo para ejecucion \n");
     
     
+    
     if(vmi[0] != '\0'){
         strcpy(mv.vmiFileName,vmi);
     }
+
+        
+
+    printf("%d \n\n\n", d);
 
     if(d == 1){
         printf("DESENSAMBLADOR ACTIVADO \n");
