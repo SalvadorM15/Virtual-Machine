@@ -20,7 +20,6 @@ void main(int argC, char *argV[]){
 
     manejaArgumentos(argC, argV, vmx, vmi, &d, &p, &argcMV, argvMV, &paramSeg, &mv);
 
-    printf("VALOR DE LA MEMORIA: %d\n", mv.MemSize);
     
     if(vmx[0] != '\0'){
         //viene un .vmx y puede venir o no un .vmi
@@ -35,19 +34,17 @@ void main(int argC, char *argV[]){
     }else{
         //SOLO VIENE UN ARCHIVO .VMI
         leeImg(&mv, vmi);
-        for(int i = mv.seg[mv.registros[CS] >> 16][0]; i < mv.seg[mv.registros[CS] >> 16][1]; i++){
-            printf("%x ", mv.ram[i]);
-        }
     }
     
-    /*
+    
     if(vmi[0] != '\0'){
         strcpy(mv.vmiFileName,vmi);
         printf("entre en leeImg\n");
     }
-    */
 
+        
 
+    printf("%d \n\n\n", d);
 
     if(d == 1){
         disassembler(&mv, mv.seg[mv.registros[CS] >> 16][1]);

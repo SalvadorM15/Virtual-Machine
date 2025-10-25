@@ -1,0 +1,1 @@
+En el assembler que subi yo hice mov edx, ds. Si despues hago add edx, 3 tira segmentation fault. No entiendo por que.

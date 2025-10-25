@@ -1182,9 +1182,7 @@ void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
         scanf("%c", &inst);
     }
     
-    for(int i = mv->seg[mv->registros[CS] >> 16][0]; i < mv->seg[mv->registros[CS] >> 16][1]; i++){
-        printf("%x ", mv->ram[i]);
-    }
+
 
     if(inst == 'q' || mv->registros[IP] == -1){ // q-> corta la ejecucion habiendo guardado la imagen
         exit(0);

@@ -208,10 +208,10 @@ void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip){
     }
     (*ip) += topB;
 
+
     for(i = ((*ip)+1); i < ((*ip) + topA+1); i++){
         mv->registros[OP1] = ((mv->registros[OP1]) << 8);
         mv->registros[OP1] |= mv->ram[i] & 0x000000FF;
-        printf("%x", mv->ram[i]);
     }   
     if(topA == 2){
         if(mv->registros[OP1] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo

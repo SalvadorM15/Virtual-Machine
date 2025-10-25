@@ -1,4 +1,4 @@
-mov edx, 3
+mov edx, ds
 mov [edx], 3
 add [edx], 7
 mov eax, 12
