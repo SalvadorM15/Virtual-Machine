@@ -170,6 +170,8 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
+        printf("direccion inicial fisica: %x\n", direccionInicial);
+        printf("valor del sys: %d\n",get_valor_operando(op,mv));
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("[%d] :", i);
                 if (get_valor_operando(op,mv)==1){
@@ -306,16 +308,19 @@ void push(int operando,MaquinaVirtual *mv){
 
     //HAGO LUGAR PARA GUARDAR EN LA PILA
     mv->registros[SP] -= 4;
-    printf("entro en el push\n");
     //SI NO HABIA LUGAR, STACK OVERFLOW
     if(mv->registros[SP] < mv->registros[SS])
         error_handler(STACKOVER);
     //SI HABIA LUGAR:
     else{
         //GUARDO EN valor EL VALOR DEL OPERANDO (VALOR A GUARDAR EN LA PILA) CONVERTIDO A 4 BYTES (CHEQUEAR)
-        printf("guardo: %x\n", get_valor_operando(operando,mv));
-        printf("direccion SP: %x\n", mv->registros[SP]);
-        set_valor_operando(operando,mv->registros[SP],mv);
+        int valor = get_valor_operando(operando,mv);
+        printf("sp: %x\n", mv->registros[SP]);
+        int direccion = logical_to_physical(mv->registros[SP], mv->seg, -4);
+        printf("direccion inicial: %x\n", direccion);
+        for(int i=direccion; i<mv->registros[SP]+4; i++){
+            mv->ram[i] = (valor >> (8 * (3 - (i - mv->registros[SP])))) & 0x000000FF;
+        }
 
         //GUARDAR valor EN MEMORIA
 
@@ -534,12 +539,13 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *co
         //leo un byte de la version
         fread(version, sizeof(char), 1, arch);
         printf("\nVersion del archivo: %d \n", *version);
-        fread(codeSeg,sizeof(short int),1,arch);
-
-        *codeSeg = (*codeSeg) >> 8; // por alguna razon lee 1 byte corrido a la izquierda
-
+        fread(codeSeg,sizeof(unsigned short int),1,arch);
+        //cambio el endian del dato
+        *codeSeg = ((*codeSeg >> 8) & 0x00FF) | ((*codeSeg << 8) & 0xFF00);
+         // por alguna razon lee 1 byte corrido a la izquierda
+      
         //leo el tamanio de los segmentos de codigo
-        if(*version == 2){
+        if((*version) == '2'){
             fread(dataSeg,sizeof(unsigned short int),1,arch);
             fread(extraSeg,sizeof(unsigned short int),1,arch);
             fread(stackSeg,sizeof(unsigned short int),1,arch);
@@ -552,6 +558,7 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *co
         //comienza la lectura del codigo y lo almacena en la ram
         i = 0;
         if(!feof(arch)){
+            //leo el codigo maquina del archivo
             fread(&num, sizeof(char), 1, arch);
             while(!feof(arch) && i < *codeSeg){
                 (mv->ram)[i] = num;
@@ -559,6 +566,17 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *co
                 fread(&num, sizeof(char), 1, arch);
             }
         }
+            if(*version == '2'){
+            
+                if(!feof(arch)){
+                    i = *constSeg;
+                    while(!feof(arch) && i < *constSeg + *dataSeg){
+                        fread(&num, sizeof(char), 1, arch);
+                        (mv->ram)[i] = num;
+                        i++;
+                    }
+                }
+            }
         fclose(arch);
     }
 
@@ -711,17 +729,21 @@ int get_logical_dir(MaquinaVirtual mv, int operandoM){ //funcion creada para obt
 
 int logical_to_physical(int logical_dir ,short int seg_table[8][2], int cant_bytes){ // funcion para pasar una direccion logica a una fisica
     int physical_dir;
+    printf("direccion logica inicial: %x", logical_dir);
     int segment =((logical_dir >> 16) & 0x0000FFFF);
     int segment_limit = seg_table[segment][0] + seg_table[segment][1];
     if(segment < 8){
         physical_dir = seg_table[segment][0];
         physical_dir += (logical_dir & 0x0000FFFF);
-        if(physical_dir > segment_limit || physical_dir + cant_bytes > segment_limit || physical_dir < seg_table[segment][0])
+        if(physical_dir > segment_limit|| physical_dir < seg_table[segment][0]){
             physical_dir = -1;
+            printf("SEGFAULT 1 EN LOGICAL TO PHYSICAL\n");
+        }
     }
-    else
+    else{
         physical_dir = -1;
-
+        printf("SEGFAULT 2 EN LOGICAL TO PHYSICAL\n");
+    }
     return physical_dir;
 }
 
@@ -923,13 +945,13 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
         i++;
         offset += constant;
     }    
-    if(code > 0){
-        mv->seg[i][0] = offset;
-        mv->seg[i][1] = code;
-        mv->registros[CS] = creaDireccionLogica(i, 0); // inicializo el puntero de CodeSegment al comienzo del segmento de codigo
-        i++;
-        offset += code;
-    }
+
+    mv->seg[i][0] = offset;
+    mv->seg[i][1] = code;
+    mv->registros[CS] = creaDireccionLogica(i, 0); // inicializo el puntero de CodeSegment al comienzo del segmento de codigo
+    i++;
+    offset += code;
+
     if(data > 0){
         mv->seg[i][0] = offset;
         mv->seg[i][1] = data;
@@ -948,17 +970,18 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
         mv->seg[i][0] = offset;
         mv->seg[i][1] = stack;
         mv->registros[SS] = creaDireccionLogica(i, 0); // inicializo el puntero de StackSegment al comienzo del segmento de stack
-        mv->registros[SP] = creaDireccionLogica(i, stack);
+        mv->registros[SP] = mv->registros[SS] + stack; // inicializo el puntero SP al final del segmento de stack
+        printf("SP inicial: %x\n", mv->registros[SP]);
         i++;
         offset += stack;
-        
     }
-}
 
+}
+//saque los if del code y stack segment porque siempre van a estar segun la especificacion de la mv2
 
 
 // CHEQUEAR, NO HAY NINGUN TIPO DE CHANCE DE QUE ESTO ANDE
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argCMV, int argvMV[], unsigned short int *paramSeg, MaquinaVirtual *mv){
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argCMV, int argvMV, unsigned short int *paramSeg, MaquinaVirtual *mv){
     int i;
     mv->MemSize = 16384; // valor por defecto
     *d = 0;
@@ -966,7 +989,6 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
     vmx[0] = '\0';  
     vmi[0] = '\0';
     *paramSeg = 0;
-    *argCMV = 0; 
     if(argc < 2){
         error_handler(NOFILE);
     }
@@ -991,20 +1013,22 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
             for(int j = *paramSeg; i<= *paramSeg + strlen(argv[i]) ; j++){
                 mv->ram[j] = (argv[i])[j];
             }
-            argvMV[*argCMV] = *paramSeg;
             // incremento la cantidad de argumentos ingresados
             (*argCMV)++;
             //aumento el tamanio del paramSegment en el tamanio del argumento ingresado
-            *paramSeg += strlen(argv[i]);
+            *paramSeg += (strlen(argv[i]) + 1); // agrego el terminator
         }        
     }
-     //agrego los punteros a los argumentos al paramSegment
+     //agrego el puntero al primer argumento del param segment
     if(*p == 1){
-            for(i = 0; i<*argCMV; i++){
-                for(int j = 0; j<4; j++){
-                    mv->ram[*paramSeg + j] = (argvMV[i] >> (8 * (3 - j))) & 0x000000FF;
-                }
-                *paramSeg += 4; 
+            argvMV = (*paramSeg); int j = 0;
+            for(i = 0; i<argCMV; i++){
+                mv->ram[*paramSeg] = j;
+                *paramSeg += 4;
+                do
+                {
+                    j++;
+                } while (mv->ram[j] != '\0');
             }
         }
     if(vmx[0] == '\0' && vmi[0] == '\0'){
@@ -1196,12 +1220,27 @@ void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 }
 
 
-void iniciaPila(MaquinaVirtual *mv, int argc, int argv[]){
-    push(argv, &mv);
-    push(argc, &mv);
-    int direccionRetorno =  -1 & 0xBFFFFFFF; //GUARDO EL TIPO DE OPERANDO (INMEDIATO) EN LOS 2 BITS MAS SIGNIFICATIVOS Y -1 EN EL RESTO DE BITS
-    push(direccionRetorno, &mv);
+void iniciaPila(MaquinaVirtual *mv, int argc, int argv){
 
+    if(mv->registros[SP] < mv->registros[SS])
+        error_handler(STACKOVER);
+    else{
+        printf("stack pointer : %x\n", mv->registros[SP]);
+        int direccionargv = mv->registros[SP] - 4;
+        int direccionargc = mv->registros[SP] - 8;
+        direccionargv = logical_to_physical(direccionargv,mv->seg,-4);
+        direccionargc = logical_to_physical(direccionargc,mv->seg,-4);
+        
+        for(int i = 0; i<4; i++){
+            mv->ram[direccionargv + i] = (argv >> (8 * (3 - i))) & 0x000000FF;
+            mv->ram[direccionargc + i] = (argc >> (8 * (3 - i))) & 0x000000FF;
+        }
+
+        mv->registros[SP] -= 8;
+    }
+    int direccionRetorno = -1 ;//GUARDO EL TIPO DE OPERANDO (MEMORIA) EN LOS 2 BITS MAS SIGNIFICATIVOS Y -1 EN EL RESTO DE BITS
+    direccionRetorno = direccionRetorno & 0x0200FFFF;
+    push(direccionRetorno, &mv);
 }
 
 
