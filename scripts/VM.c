@@ -14,12 +14,14 @@
 void mov(int opa , int opb , MaquinaVirtual *mv){
 
     int valorOPB = get_valor_operando(opb,mv);
+    printf("valor leido: %d\n",valorOPB);
     set_valor_operando(opa,valorOPB,mv);
 }
 
 void add(int opa, int opb, MaquinaVirtual *mv){
 
      int valorOPB = get_valor_operando(opb,mv);
+    printf("sume: %d con %d \n",valorOPB,get_valor_operando(opa,mv));
     set_valor_operando(opa,get_valor_operando(opa,mv)+valorOPB,mv);
     evaluarCC(get_valor_operando(opa,mv),mv);
 }
@@ -170,6 +172,10 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
+        if(get_valor_operando(op,mv) == 7){
+                    printf("ejecutando sys 7\n");
+                    system("clear");
+        }
         printf("valor del sys: %x",get_valor_operando(op,mv));
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("[%x]:", i);
@@ -251,10 +257,6 @@ void sys(int op, MaquinaVirtual *mv){
                             i++;
                         }
 
-                    }
-                    else if(get_valor_operando(op,mv) == 7){
-                        printf("ejecutando sys 7\n");
-                        system("clear");
                     }
                     else if(get_valor_operando(op,mv) == 0xf){
                         breakPoint(mv,mv->vmiFileName);
@@ -860,6 +862,7 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
             if((operando & 0xFF000000)>>24 == 3){
                 switch((operando>>22)&0X00000003){
                     case 0: // long -> 4 bytes
+                        printf("operandos de memoria de 4 bytes\n");
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,4);
                         break;
                     case 2: // word -> 2 bytes 
@@ -885,8 +888,11 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
 int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
 
     char segmento[10];
-    mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logica
-    if(operandoM & 0x1F000000 == BP || operandoM & 0x1E000000 == SP){
+    mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logic
+    printf("operando : %x\n",operandoM);
+    printf("segmento: %d\n", (operandoM & 0x1f000000));
+    if((operandoM & 0x001F0000)>>16 == BP || (operandoM & 0x1E000000)>>16 == SP){
+        printf("entre en stack\n");
         strcpy(segmento, "STACK");
     }
     else
@@ -903,14 +909,15 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
     else{
         if(strcmp(segmento,"STACK") == 0){
             mv->registros[MBR] = get_valor_pila(mv, direccion);
+            printf("valor leido de la pila: %d\n",mv->registros[MBR] );
         }
         else{
             for(int i =0; i<cant_bytes; i++){
                 mv->registros[MBR] = (mv->registros[MBR] << 8) | (mv->ram[direccion + i]&0x000000FF);
             }
-        }
-        if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
+            if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
             mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
+        }
         return mv->registros[MBR];
     }
 }
@@ -1287,11 +1294,7 @@ int get_valor_pila(MaquinaVirtual *mv, int direccion){
     int valor = 0;
     for(int i = 0; i<4; i++){
         valor = (valor << 8) | (mv->ram[direccion + i]&0x000000FF);
-
     }
-    if(valor & 0x00008000) // si el bit 23 del valor es 1, es negativo
-            valor = valor | 0xFFFF0000; // lo extiendo a 32 bits
-    return valor;
 }
 
 void set_valor_pila(MaquinaVirtual *mv, int direccion, int valor){
