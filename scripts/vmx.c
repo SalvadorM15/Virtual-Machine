@@ -27,16 +27,12 @@ void main(int argC, char *argV[]){
         strcpy(fileName,vmx);
         lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP, &version);
         iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg, offsetEP);
-        if(version == '2'){
+        if(version == 2){
             //Argc y Argv lo pongo en la pila a mano porque no son operandos validos
             iniciaPila(&mv, argcMV, argvMV);
         }
-        //el codeSegment y el StackSegment siempre estan presentes
-    }else{
-        //SOLO VIENE UN ARCHIVO .VMI
+    }else
         leeImg(&mv, vmi);
-    }
-    printf("Listo para ejecucion \n");
     
     
     
@@ -51,10 +47,9 @@ void main(int argC, char *argV[]){
     if(d == 1){
         printf("DESENSAMBLADOR ACTIVADO \n");
         disassembler(&mv, codeSeg);
-    }
+        }
 
     do{
-        //printf("IP: %x\n", mv.registros[IP]);
         step(&mv);
     }while(mv.registros[IP] > -1 && mv.registros[IP] < mv.registros[CS] + codeSeg);
 }

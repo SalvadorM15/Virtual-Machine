@@ -74,7 +74,7 @@
 
 typedef struct{
     int registros[REG];
-    char  ram[MAXMEM];
+    unsigned char  ram[MAXMEM];
     short int seg[8][2];
     char vmiFileName[20];
     int MemSize;
@@ -112,7 +112,7 @@ void not(int op, MaquinaVirtual *mv);
 void jn_op(int op, MaquinaVirtual *mv);
 
 int get_logical_dir(MaquinaVirtual mv, int operandoM);
-int logical_to_physical(int logical_dir, short int seg_table[MAX][2], int cant_bytes);
+int logical_to_physical(int logical_dir, MaquinaVirtual *mv, int cant_bytes, char segmento[]);
 int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes);
 
 void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes);
@@ -126,7 +126,7 @@ void imprimirBinarioCompacto(int n);
 void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv);
 void error_handler(int error);
 
-void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, int *version);
+void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, char *version);
 void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg, int offsetEP);
 void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int extra, int stack, int constant);
 void step(MaquinaVirtual *mv);
