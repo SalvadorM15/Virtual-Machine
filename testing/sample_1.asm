@@ -1,13 +1,10 @@
-cadena equ "hola"
-cad1 equ "hijo de putaaaa"
+mov efx, 0
+mov fh, 5
+mov fl, 2
 mov edx, ds
-mov [edx], 3
-add [edx], 7
-mov eax, 12
+mov [edx], efx
+mov eax, 1
 ldl ecx, 1
 ldh ecx, 4
-sys 15
-mov edx, 7
-mov eax, 1
-sys 15
+sys 2
 stop

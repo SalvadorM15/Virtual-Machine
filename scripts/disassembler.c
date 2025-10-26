@@ -74,28 +74,30 @@ const char* identificarMnemonico(int codigo){
 const char *identificaAreaReg(char reg[], int op){
         int area = (op >> 6) & 0x00000003;
         char *salida = malloc(4*sizeof(char));
+        salida[0] = '\0';
+        
         switch(area){
                 case 0:
                         strcpy(salida, reg);
                 break;
                 case 1:
                         strcat(salida, &(reg[1]));
-                        strcat(salida, &(reg[2]));
+                        salida[1] = 'L';
                 break;
                 case 2:
                         strcat(salida, &(reg[1]));
-                        strcat(salida, "H");
+                        salida[1] = 'H';
                 break;
                 case 3:
                         strcat(salida, &(reg[1]));
-                        strcat(salida, "X");
+                        //strcat(salida, "X");
                 break;
         }
         return salida;
 }
 
 const char* identificarRegistro(int op){
-    switch (op){
+    switch (op & 0x0000001F){
         case LAR: return "LAR";
                 break;
         case MAR: return "MAR";
@@ -118,7 +120,8 @@ const char* identificarRegistro(int op){
                 break;
         case EDX: return identificaAreaReg("EDX", op);
                 break;
-        case EFX: return identificaAreaReg("EFX", op);
+        case EFX: 
+                return identificaAreaReg("EFX", op);
                 break;
         case EEX: return identificaAreaReg("EEX", op);
                 break;
