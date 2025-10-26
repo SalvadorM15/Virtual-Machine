@@ -1184,7 +1184,7 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
 
 void escribeHeaderImg(char version, short int tamMem, char vmi[]){
     char identificador[] = "VMI25";
-    FILE *arch = fopen(vmi, "ab");
+    FILE *arch = fopen(vmi, "wb");
     //ESCRIBOEL IDENTIFICADOR
     fwrite(identificador, sizeof(char), strlen(identificador), arch);
     
@@ -1209,10 +1209,14 @@ void escribeRegistrosImg(MaquinaVirtual mv, char vmi[]){
 
 void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]){
     int i;
+    short int base;
     FILE *arch = fopen(vmi, "ab");
     for(i=0; i<8; i++){
-        fwrite(&(mv.seg[i][0]), sizeof(short int), 1, arch);
+        base = mv.seg[i][0];
+        base = ((base >> 8) & 0x00FF) | ((base << 8) & 0xFF00);
+        fwrite(&base, sizeof(short int), 1, arch);
         fwrite(&(mv.seg[i][1]), sizeof(short int), 1, arch);
+
 
     }
 
@@ -1235,7 +1239,7 @@ void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]){
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 
     char inst;
-    escribeImg(*mv, vmiFileName, 2, mv->MemSize / 1024);
+    escribeImg(*mv, vmiFileName, 1, mv->MemSize / 1024);
     scanf("%c", &inst);
 
     while(inst == '\n' && mv->registros[IP] != -1){

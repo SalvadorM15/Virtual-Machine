@@ -199,7 +199,7 @@ void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int
         ascii[len++] = (c >=32 && c <=126) ? c : '.';
     }
     ascii[len]='\0';
-    printf("\t\"%s\"\n", ascii);
+    printf("\t|\"%s\"\n", ascii);
 }
 
 

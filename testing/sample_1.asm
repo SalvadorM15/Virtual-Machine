@@ -7,4 +7,5 @@ ldh ecx, 4
 sys 15
 mov edx, 7
 mov eax, 1
+sys 15
 stop
