@@ -1,7 +1,4 @@
-#include "VM.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
 
 
 
@@ -14,12 +11,14 @@
 void mov(int opa , int opb , MaquinaVirtual *mv){
 
     int valorOPB = get_valor_operando(opb,mv);
+    printf("valor leido: %d\n",valorOPB);
     set_valor_operando(opa,valorOPB,mv);
 }
 
 void add(int opa, int opb, MaquinaVirtual *mv){
 
      int valorOPB = get_valor_operando(opb,mv);
+    printf("sume: %d con %d \n",valorOPB,get_valor_operando(opa,mv));
     set_valor_operando(opa,get_valor_operando(opa,mv)+valorOPB,mv);
     evaluarCC(get_valor_operando(opa,mv),mv);
 }
@@ -250,10 +249,6 @@ void sys(int op, MaquinaVirtual *mv){
                             i++;
                         }
 
-                    }
-                    else if(get_valor_operando(op,mv) == 7){
-                        printf("ejecutando sys 7\n");
-                        system("clear");
                     }
                     else if(get_valor_operando(op,mv) == 0xf){
                         breakPoint(mv,mv->vmiFileName);
@@ -531,7 +526,7 @@ void error_handler(int error){
 
 
 
-void lectura_arch(MaquinaVirtual *mv, char nombre_arch[],unsigned short int paramSeg, unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, char *version){
+void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, char *version){
     FILE *arch;
     unsigned char num;
     int i;
@@ -574,18 +569,18 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[],unsigned short int para
         i = 0;
         if(!feof(arch)){
             //leo el codigo maquina del archivo
-            //fread(&num, sizeof(char), 1, arch);
+            fread(&num, sizeof(char), 1, arch);
             while(!feof(arch) && i < *codeSeg){
-                fread(&num, sizeof(char), 1, arch);
-                mv->ram[i + *constSeg + paramSeg] = num;
+                mv->ram[i] = num;
                 i++;
+                fread(&num, sizeof(char), 1, arch);
             }
         }
             if(*version == 2){
             
                 if(!feof(arch)){
-                    i = paramSeg;
-                    while(!feof(arch) && i < *constSeg + paramSeg){
+                    i = *constSeg;
+                    while(!feof(arch) && i < *constSeg + *dataSeg){
                         fread(&num, sizeof(char), 1, arch);
                         (mv->ram)[i] = num;
                         i++;
@@ -859,6 +854,7 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
             if((operando & 0xFF000000)>>24 == 3){
                 switch((operando>>22)&0X00000003){
                     case 0: // long -> 4 bytes
+                        printf("operandos de memoria de 4 bytes\n");
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,4);
                         break;
                     case 2: // word -> 2 bytes 
@@ -884,8 +880,11 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
 int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
 
     char segmento[10];
-    mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logica
-    if(operandoM & 0x1F000000 == BP || operandoM & 0x1E000000 == SP){
+    mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logic
+    printf("operando : %x\n",operandoM);
+    printf("segmento: %d\n", (operandoM & 0x1f000000));
+    if((operandoM & 0x001F0000)>>16 == BP || (operandoM & 0x1E000000)>>16 == SP){
+        printf("entre en stack\n");
         strcpy(segmento, "STACK");
     }
     else
@@ -902,14 +901,15 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
     else{
         if(strcmp(segmento,"STACK") == 0){
             mv->registros[MBR] = get_valor_pila(mv, direccion);
+            printf("valor leido de la pila: %d\n",mv->registros[MBR] );
         }
         else{
             for(int i =0; i<cant_bytes; i++){
                 mv->registros[MBR] = (mv->registros[MBR] << 8) | (mv->ram[direccion + i]&0x000000FF);
             }
+            if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
+                mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
         }
-        if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
-            mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
         return mv->registros[MBR];
     }
 }
@@ -936,7 +936,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes)
     }
     else{
         if(strcmp(segmento,"STACK") == 0){
-            set_valor_pila(mv, direccion, valor);
+            set_valor_pila(mv, direccion, valor, cant_bytes);
         }
         else{
             for(int i = 0; i<cant_bytes; i++){
@@ -1177,6 +1177,7 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
         escribeMemoriaImg(mv, tamMem, vmi);
     }
     else{
+        printf("NO SE PUDO ABRIR EL ARCHIVO .vmi");
         error_handler(NOFILE);
     }
 
@@ -1210,14 +1211,10 @@ void escribeRegistrosImg(MaquinaVirtual mv, char vmi[]){
 
 void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]){
     int i;
-    short int base;
     FILE *arch = fopen(vmi, "ab");
     for(i=0; i<8; i++){
-        base = mv.seg[i][0];
-        base = ((base >> 8) & 0x00FF) | ((base << 8) & 0xFF00);
-        fwrite(&base, sizeof(short int), 1, arch);
+        fwrite(&(mv.seg[i][0]), sizeof(short int), 1, arch);
         fwrite(&(mv.seg[i][1]), sizeof(short int), 1, arch);
-
 
     }
 
@@ -1240,7 +1237,7 @@ void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]){
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 
     char inst;
-    escribeImg(*mv, vmiFileName, 1, mv->MemSize / 1024);
+    escribeImg(*mv, vmiFileName, 2, mv->MemSize / 1024);
     scanf("%c", &inst);
 
     while(inst == '\n' && mv->registros[IP] != -1){
@@ -1291,11 +1288,7 @@ int get_valor_pila(MaquinaVirtual *mv, int direccion){
     int valor = 0;
     for(int i = 0; i<4; i++){
         valor = (valor << 8) | (mv->ram[direccion + i]&0x000000FF);
-
     }
-    if(valor & 0x00008000) // si el bit 23 del valor es 1, es negativo
-            valor = valor | 0xFFFF0000; // lo extiendo a 32 bits
-    return valor;
 }
 
 void set_valor_pila(MaquinaVirtual *mv, int direccion, int valor){
