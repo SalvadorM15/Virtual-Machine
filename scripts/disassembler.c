@@ -239,6 +239,39 @@ if (flag_disassembler){
 }
 */
 
+void disassemblerConstantes(MaquinaVirtual *mv, short int tamSeg, short int inicio){
+     int i=0;
+     char cadena[100];
+     int len=0;
+     while (i<tamSeg){
+        printf("%04x: ", inicio + i);
+        char c = mv->ram[inicio + i];
+        while (c!=0 && i<tamSeg){
+            if (len<6){
+                printf("%02X ", mv->ram[inicio + i]&0x000000FF);
+            }
+            else if (len==6){
+                printf(".. ");
+            }
+            len++;
+            if (c >=32 && c <=126)
+                cadena[len]=c;
+                else
+                   cadena[len]='.';
+            i++;
+            c = mv->ram[inicio + i];
+        }
+        if (len<6){
+        printf("%02X ", mv->ram[inicio + i]&0x000000FF); // imprimo el caracter nulo
+        len++;
+        }
+        else if (len==6){
+            printf(".. ");
+        }
+        cadena[len]='\0';
+        printf("   \"%s\"\n", cadena);
+     }   
+}
 
 void disassembler(MaquinaVirtual *mv, short int tamSeg){
     int ToperandoA,ToperandoB,operacion;
