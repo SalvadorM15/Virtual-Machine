@@ -136,7 +136,7 @@ const char* identificarMnemonico(int codigo);
 const char* identificarRegistro(int codigo);
 void imprimir_operador(int op, int Toperando);
 void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion, int operacion);
-void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip);
+void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, short int *ip);
 void disassembler(MaquinaVirtual *mv, short int tamSeg);
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv);
