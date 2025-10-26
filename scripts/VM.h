@@ -126,7 +126,7 @@ void imprimirBinarioCompacto(int n);
 void instruction_handler(int opA, int opB, int operacion, MaquinaVirtual *mv);
 void error_handler(int error);
 
-void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, char *version);
+void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int paramSeg, unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, char *version);
 void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int dataSeg,unsigned short int extraSeg,unsigned short int stackSeg,unsigned short int constSeg,unsigned short int paramSeg, int offsetEP);
 void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int extra, int stack, int constant);
 void step(MaquinaVirtual *mv);
@@ -157,5 +157,6 @@ void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]);
 void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]);
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]);
 void iniciaPila(MaquinaVirtual *mv, int argc, int argv);
+void set_valor_pila(MaquinaVirtual *mv, int direccion, int valor);
 
 //fin vm.h

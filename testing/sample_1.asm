@@ -1,3 +1,5 @@
+cadena equ "hola"
+cad1 equ "hijo de putaaaa"
 mov edx, ds
 mov [edx], 3
 add [edx], 7
@@ -7,4 +9,5 @@ ldh ecx, 4
 sys 15
 mov edx, 7
 mov eax, 1
+sys 15
 stop

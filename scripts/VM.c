@@ -1,7 +1,4 @@
-#include "VM.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
 
 
 
@@ -172,11 +169,6 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
-        if(get_valor_operando(op,mv) == 7){
-                    printf("ejecutando sys 7\n");
-                    system("clear");
-        }
-        printf("valor del sys: %x",get_valor_operando(op,mv));
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("[%x]:", i);
                 if (get_valor_operando(op,mv)==1){
@@ -916,7 +908,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
                 mv->registros[MBR] = (mv->registros[MBR] << 8) | (mv->ram[direccion + i]&0x000000FF);
             }
             if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
-            mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
+                mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
         }
         return mv->registros[MBR];
     }
