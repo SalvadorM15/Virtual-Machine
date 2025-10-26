@@ -935,7 +935,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes)
     }
     else{
         if(strcmp(segmento,"STACK") == 0){
-            set_valor_pila(mv, direccion, valor, cant_bytes);
+            set_valor_pila(mv, direccion, valor);
         }
         else{
             for(int i = 0; i<cant_bytes; i++){

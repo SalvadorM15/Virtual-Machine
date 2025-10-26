@@ -42,10 +42,9 @@ void main(int argC, char *argV[]){
 
         
 
-    printf("%d \n\n\n", d);
-
+    
+    fflush(stdout);
     if(d == 1){
-        printf("DESENSAMBLADOR ACTIVADO \n");
         disassembler(&mv, codeSeg);
         }
 

@@ -157,5 +157,6 @@ void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]);
 void escribeMemoriaImg(MaquinaVirtual mv, short int tamMem, char vmi[]);
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]);
 void iniciaPila(MaquinaVirtual *mv, int argc, int argv);
+void set_valor_pila(MaquinaVirtual *mv, int direccion, int valor);
 
 //fin vm.h
