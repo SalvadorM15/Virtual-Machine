@@ -176,7 +176,7 @@ void imprimir_operador(int op, int Toperando){
 }
 void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion, int operacion){
 
-    printf("[%04x]", direccion);
+    printf(" [%04x]", direccion);
     printf(" %02X  %02X  %02X  %02X  %02X  %02X  %02X    ", (instruccion & 0x000000FF),(opA>>16)&0x000000FF,(opA>>8)&0x000000FF,(opA)&0x000000FF, (opB>>16)&0x000000FF, (opB>>8)&0x000000FF, (opB)&0x000000FF); //Imprime instruccion y tipos de operandos
     printf("\t|%s", identificarMnemonico(operacion));
     printf("\t");
@@ -194,18 +194,14 @@ void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int
 
 }
 
-void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip){
-    printf("entro a lee operandos 2\n");
+void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, short int *ip){
     int i;
     mv->registros[OP1] = 0;
     mv->registros[OP2] = 0;
-    printf("ip inicial: %x\n", *ip);
     for(i = ((*ip)+1); i < ((*ip) + topB+1); i++){
-        printf("i: %d\n", i);
         mv->registros[OP2] = ((mv->registros[OP2]) << 8);
         mv->registros[OP2] |= (mv->ram[i])&0x000000FF;
     }
-    printf("paso etapa 1\n");
     if(topB == 2){
         if(mv->registros[OP2] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
             mv->registros[OP2] = mv->registros[OP2] | 0x00FF0000; // lo extiendo a 32 bits
@@ -217,7 +213,6 @@ void lee_operandos2(int topA, int topB, MaquinaVirtual *mv, int *ip){
         mv->registros[OP1] = ((mv->registros[OP1]) << 8);
         mv->registros[OP1] |= mv->ram[i] & 0x000000FF;
     }   
-    printf("paso etapa 2\n");
     if(topA == 2){
         if(mv->registros[OP1] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
             mv->registros[OP1] = mv->registros[OP1] | 0x00FF0000; // lo extiendo a 32 bits
@@ -240,16 +235,17 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg){
     int ToperandoA,ToperandoB,operacion;
     short int ip;
     ip = mv->seg[mv->registros[CS] >> 16][0];
-    printf("ip: %04x \n", ip);
     while (ip < mv->seg[mv->registros[CS] >> 16][1] && operacion != STOP){
         char instruccion = mv->ram[ip];
         int dir = ip;
+        if(ip == mv->registros[IP])
+                printf(">");
+        else
+                printf(" ");
         procesaOperacion(instruccion,&ToperandoA,&ToperandoB,&operacion); // desarma la instruccion codificada
         //HASTA ACA TODO BIEN
-        printf("paso el procesa operancion\n");
         lee_operandos2(ToperandoA,ToperandoB,mv, &ip); // lee los siguientes bytes de los operandos A y B y mueve el ip
         // EL ERROR ESTA EN LEE OPERANDOS 2.
-        printf("paso el lee operandos\n");
         escribirInstruccion(mv,mv->registros[OP1],mv->registros[OP2],ToperandoA,ToperandoB, instruccion, dir, operacion);
         printf("\n");
     }

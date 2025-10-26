@@ -170,6 +170,7 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
+        printf("valor del sys: %x",get_valor_operando(op,mv));
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("[%x]:", i);
                 if (get_valor_operando(op,mv)==1){
@@ -252,6 +253,7 @@ void sys(int op, MaquinaVirtual *mv){
 
                     }
                     else if(get_valor_operando(op,mv) == 7){
+                        printf("ejecutando sys 7\n");
                         system("clear");
                     }
                     else if(get_valor_operando(op,mv) == 0xf){
@@ -609,7 +611,7 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
 
 }
 
-void step(MaquinaVirtual *mv){
+void step (MaquinaVirtual *mv){
 
     //primer paso: leer la instruccion del registro IP
     int ToperandoA,ToperandoB,operacion;
@@ -1277,6 +1279,9 @@ void iniciaPila(MaquinaVirtual *mv, int argc, int argv){
     direccionRetorno = direccionRetorno & 0x0200FFFF;
     push(direccionRetorno, mv);
 }
+
+
+
 
 int get_valor_pila(MaquinaVirtual *mv, int direccion){
     int valor = 0;
