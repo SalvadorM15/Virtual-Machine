@@ -45,6 +45,7 @@ void main(int argC, char *argV[]){
     
     fflush(stdout);
     if(d == 1){
+        disassemblerConstantes(&mv, constSeg, paramSeg);
         disassembler(&mv, codeSeg);
         }
 
