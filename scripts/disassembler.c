@@ -175,7 +175,9 @@ void imprimir_operador(int op, int Toperando){
     }
 }
 void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int ToperandoB, char instruccion, int direccion, int operacion){
-
+    unsigned char c;
+    char ascii[100];
+    int len = 0;
     printf(" [%04x]", direccion);
     printf(" %02X  %02X  %02X  %02X  %02X  %02X  %02X    ", (instruccion & 0x000000FF),(opA>>16)&0x000000FF,(opA>>8)&0x000000FF,(opA)&0x000000FF, (opB>>16)&0x000000FF, (opB>>8)&0x000000FF, (opB)&0x000000FF); //Imprime instruccion y tipos de operandos
     printf("\t|%s", identificarMnemonico(operacion));
@@ -191,7 +193,13 @@ void escribirInstruccion(MaquinaVirtual *mv,int opA, int opB,int ToperandoA, int
         if (ToperandoA>0){
             imprimir_operador(opA,ToperandoA);
     }
-
+    for (int j=0; j<50; j++){
+        c = mv->ram[direccion+j];
+        if (c == 0) break;
+        ascii[len++] = (c >=32 && c <=126) ? c : '.';
+    }
+    ascii[len]='\0';
+    printf("\t\"%s\"\n", ascii);
 }
 
 
