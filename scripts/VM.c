@@ -1166,8 +1166,10 @@ void leeMemoriaImg(MaquinaVirtual *mv, FILE *arch, short int tamMem){
 void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
     //tamMem EN KiB
     FILE *arch;
-    arch = fopen(vmi, "wb");
+    arch = fopen(vmi, "rb");
     if(arch){
+        fclose(arch);
+        arch = fopen(vmi, "wb");
         fclose(arch);
         escribeHeaderImg(version, tamMem, vmi);
         escribeRegistrosImg(mv, vmi);
