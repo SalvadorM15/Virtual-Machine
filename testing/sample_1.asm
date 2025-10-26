@@ -1,3 +1,5 @@
+cadena equ "hola"
+cad1 equ "hijo de putaaaa"
 mov edx, ds
 mov [edx], 3
 add [edx], 7

@@ -25,7 +25,7 @@ void main(int argC, char *argV[]){
     if(vmx[0] != '\0'){
         //viene un .vmx y puede venir o no un .vmi
         strcpy(fileName,vmx);
-        lectura_arch(&mv,fileName, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP, &version);
+        lectura_arch(&mv,fileName, paramSeg, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP, &version);
         iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg, offsetEP);
         if(version == 2){
             //Argc y Argv lo pongo en la pila a mano porque no son operandos validos

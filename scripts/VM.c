@@ -531,7 +531,7 @@ void error_handler(int error){
 
 
 
-void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, char *version){
+void lectura_arch(MaquinaVirtual *mv, char nombre_arch[],unsigned short int paramSeg, unsigned short int *codeSeg, unsigned short int *dataSeg, unsigned short int *extraSeg, unsigned short int *stackSeg, unsigned short int *constSeg, unsigned short int *offsetEP, char *version){
     FILE *arch;
     unsigned char num;
     int i;
@@ -574,18 +574,18 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[], unsigned short int *co
         i = 0;
         if(!feof(arch)){
             //leo el codigo maquina del archivo
-            fread(&num, sizeof(char), 1, arch);
+            //fread(&num, sizeof(char), 1, arch);
             while(!feof(arch) && i < *codeSeg){
-                mv->ram[i] = num;
-                i++;
                 fread(&num, sizeof(char), 1, arch);
+                mv->ram[i + *constSeg + paramSeg] = num;
+                i++;
             }
         }
             if(*version == 2){
             
                 if(!feof(arch)){
-                    i = *constSeg;
-                    while(!feof(arch) && i < *constSeg + *dataSeg){
+                    i = paramSeg;
+                    while(!feof(arch) && i < *constSeg + paramSeg){
                         fread(&num, sizeof(char), 1, arch);
                         (mv->ram)[i] = num;
                         i++;
@@ -1175,7 +1175,6 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
         escribeMemoriaImg(mv, tamMem, vmi);
     }
     else{
-        printf("NO SE PUDO ABRIR EL ARCHIVO .vmi");
         error_handler(NOFILE);
     }
 
@@ -1184,7 +1183,7 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
 
 void escribeHeaderImg(char version, short int tamMem, char vmi[]){
     char identificador[] = "VMI25";
-    FILE *arch = fopen(vmi, "wb");
+    FILE *arch = fopen(vmi, "ab");
     //ESCRIBOEL IDENTIFICADOR
     fwrite(identificador, sizeof(char), strlen(identificador), arch);
     
