@@ -263,12 +263,15 @@ void sys(int op, MaquinaVirtual *mv){
         }
     }
 }
+}
 void jmp(int op, MaquinaVirtual *mv){
     int proxIP = (get_valor_operando(op,mv))&0x0000ffff;
-    if(proxIP < 0 || proxIP >= mv->seg[mv->registros[CS]][1] + 1)
+    proxIP += logical_to_physical(mv->registros[CS],mv,4,"CUAQUIERA");
+    if(proxIP < 0 || proxIP >= mv->seg[(mv->registros[CS])>>16][1] + 1)
         error_handler(SEGFAULT);
-    else
-        mv->registros[IP] =  get_valor_operando(op,mv);
+    else{
+        mv->registros[IP] =  proxIP;
+    }
 }
 
 void jz(int op, MaquinaVirtual *mv){
@@ -361,7 +364,7 @@ void call(int operando, MaquinaVirtual *mv){
     int techo = mv->registros[SS] | mv->seg[numSeg][1];
     if(mv->registros[SP] > techo)
         error_handler(STACKUNDER);
-    if(direccion < -1|| direccion >= mv->seg[mv->registros[CS]][1] + mv->seg[mv->registros[CS]][0])
+    if(direccion < -1|| direccion >= mv->seg[(mv->registros[CS])>>16][1] + mv->seg[(mv->registros[CS])>>16][0])
         error_handler(SEGFAULT);
     else
         mv->registros[IP] = direccion;
