@@ -856,7 +856,7 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
                 }
         }
         else{ // operando memoria
-            if((operando & 0xFF000000)>>24 == 3){
+            if((operando >> 24) & 0x00000003 == 3){
                 switch((operando>>22)&0X00000003){
                     case 0: // long -> 4 bytes
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,4);
@@ -904,8 +904,23 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
             mv->registros[MBR] = get_valor_pila(mv, direccion);
         }
         else{
+            mv->registros[MBR] = 0;
+            /* if(cant_bytes == 1){
+                mv->registros[MBR] = mv->ram[direccion] & 0x000000FF;
+            }
+            else if(cant_bytes == 2){
+                mv->registros[MBR] = (mv->ram[direccion] & 0x000000FF) << 8;
+                mv->registros[MBR] |= (mv->ram[direccion + 1] & 0x000000FF);
+            }
+            else if(cant_bytes == 4){
+                mv->registros[MBR] = (mv->ram[direccion] & 0x000000FF) << 24;
+                mv->registros[MBR] |= (mv->ram[direccion + 1] & 0x000000FF) << 16;
+                mv->registros[MBR] |= (mv->ram[direccion + 2] & 0x000000FF) << 8;
+                mv->registros[MBR] |= (mv->ram[direccion + 3] & 0x000000FF);
+            }
+            */
             for(int i =0; i<cant_bytes; i++){
-                mv->registros[MBR] = (mv->registros[MBR] << 8) | (mv->ram[direccion + i]&0x000000FF);
+                mv->registros[MBR] |= (mv->ram[direccion + i] & 0x000000FF) << (8 * (cant_bytes - 1 - i));
             }
         }
         if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
@@ -940,7 +955,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes)
         }
         else{
             for(int i = 0; i<cant_bytes; i++){
-                mv->ram[direccion + i] = (valor >> (8 * (3 - i))) & 0x000000FF;
+                mv->ram[direccion + i] = (valor >> (8 * (cant_bytes - 1 - i))) & 0x000000FF;
             }
         }
     }
