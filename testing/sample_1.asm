@@ -1,6 +1,6 @@
+cad1 equ 5
 mov efx, 0
-mov fh, 5
-mov fl, 2
+mov fx, 5
 mov edx, ds
 mov [edx], efx
 mov eax, 1

@@ -170,7 +170,7 @@ void sys(int op, MaquinaVirtual *mv){
     }
     else {
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
-                printf("[%x]:", i);
+                printf("  [%x]:", i);
                 if (get_valor_operando(op,mv)==1){
                     int entrada=0;
                     switch (mv->registros[EAX]){ // evaluo el tipo de dato de entrada
@@ -788,16 +788,16 @@ void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
         int tipoReg = (operando & 0x00000000C0) >> 6;
         switch (tipoReg){
             case 0: // registro de 4 bytes
-                mv->registros[(operando & 0x00FFFFFF)]= valor;
+                mv->registros[(operando & 0x0000001F)]= valor;
                 break;
             case 1: // 4to byte
-                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFFFF00) | ((unsigned int)(valor & 0x000000FF));
+                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFFFF00) | ((unsigned int)(valor & 0x000000FF));
                 break;
             case 2: // 3er byte
-                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFF00FF) | ((unsigned int)(valor<<8 & 0x0000FF00));
+                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFF00FF) | ((unsigned int)(valor<<8 & 0x0000FF00));
                 break;
             case 3: // 2 bytes menos significativos
-                mv->registros[(operando & 0x00FFFFFF)] = (mv->registros[(operando & 0x00FFFFFF)] & 0xFFFF0000) | ((unsigned int)(valor & 0x0000FFFF));
+                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x00FFFFFF)] & 0xFFFF0000) | ((unsigned int)(valor & 0x0000FFFF));
                 break;
             }
     }
