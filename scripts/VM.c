@@ -170,6 +170,39 @@ void sys(int op, MaquinaVirtual *mv){
         return;
     }
     else {
+        if(get_valor_operando(op,mv) == 4){
+             int i = mv->registros[EDX];
+             while(mv->ram[i] != '\0'){
+                printf("%c", mv->ram[i]);
+                i++;
+             }                        
+        }
+        else if(get_valor_operando(op,mv) == 0xf){
+             breakPoint(mv,mv->vmiFileName);
+         }
+        else if(get_valor_operando(op,mv) == 7){
+            printf("ejecutando sys 7\n");
+            system("clear");
+        }
+        else  if(get_valor_operando(op,mv) == 3){
+                 char cadena[100]; //no se q tamaño darle
+                 scanf("%s", &cadena);
+                 short int stringlen = (mv->registros[ECX] & 0x0000FFFF);
+
+                if(stringlen & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
+                     stringlen = stringlen | 0xFFFF0000;
+
+                if(stringlen == -1)
+                    stringlen = strlen(cadena);
+
+                for(int i = 0; i< stringlen; i++){
+                      mv->ram[direccionInicial + i] = cadena[i];
+                }
+
+                mv->ram[direccionInicial + stringlen] = '\0'; // agrego el caracter nulo al final
+        }
+        //Aca entran los que escriben o leen una celda de memoria
+        else{
         for (int i=direccionInicial; i<direccionInicial+cantCeldas*tamanioCelda; i+=tamanioCelda){ //recorro todas las celdas a utilizar
                 printf("  [%x]:", i);
                 if (get_valor_operando(op,mv)==1){
@@ -226,40 +259,7 @@ void sys(int op, MaquinaVirtual *mv){
                           if (mv->registros[EAX] & 0x01)
                              printf("salida: %d \n", salida);
                     }
-                    else  if(get_valor_operando(op,mv) == 3){
-                        char cadena[100]; //no se q tamaño darle
-                        scanf("%s", &cadena);
-                        short int stringlen = (mv->registros[ECX] & 0x0000FFFF);
-
-                        if(stringlen & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
-                            stringlen = stringlen | 0xFFFF0000;
-
-                        if(stringlen == -1)
-                            stringlen = strlen(cadena);
-
-                        for(int i = 0; i< stringlen; i++){
-                            mv->ram[direccionInicial + i] = cadena[i];
-                        }
-
-                        mv->ram[direccionInicial + stringlen] = '\0'; // agrego el caracter nulo al final
-                    }
-                    else if(get_valor_operando(op,mv) == 4){
-                        int i = mv->registros[EDX];
-                        while(mv->ram[i] != '\0'){
-                            printf("%c", mv->ram[i]);
-                            i++;
-                        }
-
-                    }
-                    else if(get_valor_operando(op,mv) == 7){
-                        printf("ejecutando sys 7\n");
-                        system("clear");
-                    }
-                    else if(get_valor_operando(op,mv) == 0xf){
-                        breakPoint(mv,mv->vmiFileName);
-                    }
-                        
-                }
+            }
         }
     }
 }
@@ -885,7 +885,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
 
     char segmento[10];
     mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logica
-    if(operandoM & 0x1F000000 == BP || operandoM & 0x1E000000 == SP){
+    if((operandoM & 0x001F0000)>>16 == BP || (operandoM & 0x001F0000)>>16 == SP){
         strcpy(segmento, "STACK");
     }
     else
@@ -905,7 +905,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
         }
         else{
             mv->registros[MBR] = 0;
-            /* if(cant_bytes == 1){
+             if(cant_bytes == 1){
                 mv->registros[MBR] = mv->ram[direccion] & 0x000000FF;
             }
             else if(cant_bytes == 2){
@@ -918,13 +918,13 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
                 mv->registros[MBR] |= (mv->ram[direccion + 2] & 0x000000FF) << 8;
                 mv->registros[MBR] |= (mv->ram[direccion + 3] & 0x000000FF);
             }
-            */
+            
             for(int i =0; i<cant_bytes; i++){
                 mv->registros[MBR] |= (mv->ram[direccion + i] & 0x000000FF) << (8 * (cant_bytes - 1 - i));
             }
+             if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
+                mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
         }
-        if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
-            mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
         return mv->registros[MBR];
     }
 }
