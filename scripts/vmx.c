@@ -38,6 +38,8 @@ void main(int argC, char *argV[]){
     
     if(vmi[0] != '\0'){
         strcpy(mv.vmiFileName,vmi);
+    }else{
+        strcpy(mv.vmiFileName,"empty");
     }
 
         
@@ -48,7 +50,6 @@ void main(int argC, char *argV[]){
         disassemblerConstantes(&mv, constSeg, paramSeg);
         disassembler(&mv, codeSeg);
         }
-
     do{
         step(&mv);
     }while(mv.registros[IP] > -1 && mv.registros[IP] < mv.registros[CS] + codeSeg);

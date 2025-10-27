@@ -1150,6 +1150,7 @@ void leeRegistrosImg(MaquinaVirtual *mv, FILE *arch){
     //LEE EL VALOR DEL REIGSTRO i Y LO GUARDA EN LA MAQUINA VIRTUAL
     for(i = 0; i < 32; i++){
         fread(&reg, sizeof(int), 1, arch);
+        //reg = (reg>>24)&0x000000ff | (reg>>8)&0x0000ff00 | (reg<<8)&0x00ff0000 | (reg<<24)&0xff000000;
         mv->registros[i] = reg;
     }
 }
@@ -1161,6 +1162,9 @@ void leeTablaSegmentosImg(MaquinaVirtual *mv, FILE *arch){
     for(i=0; i<8; i++){
         fread(&segBase, sizeof(short int), 1, arch);
         fread(&segLimit, sizeof(short int), 1, arch);
+        segBase = ((segBase >> 8) & 0x00FF) | ((segBase << 8) & 0xFF00);
+        segLimit= ((segLimit >> 8) & 0x00FF) | ((segLimit<< 8) & 0xFF00);
+        printf("\n");
         mv->seg[i][0] = segBase;
         mv->seg[i][1] = segLimit;
     }
@@ -1185,19 +1189,19 @@ void escribeImg(MaquinaVirtual mv, char vmi[], char version, short int tamMem){
     //tamMem EN KiB
     FILE *arch;
     arch = fopen(vmi, "rb");
-    if(arch){
-        fclose(arch);
-        arch = fopen(vmi, "wb");
+    
+    if(strcmp(vmi,"empty") == 0){
+        error_handler(NOFILE);
+    }
+    else{
+
+     arch = fopen(vmi, "wb");
         fclose(arch);
         escribeHeaderImg(version, tamMem, vmi);
         escribeRegistrosImg(mv, vmi);
         escribeTablaSegImg(mv, vmi);
         escribeMemoriaImg(mv, tamMem, vmi);
     }
-    else{
-        error_handler(NOFILE);
-    }
-
 
 }
 
@@ -1217,24 +1221,29 @@ void escribeHeaderImg(char version, short int tamMem, char vmi[]){
 }
 
 void escribeRegistrosImg(MaquinaVirtual mv, char vmi[]){
-    int i;
+    int i,valorReg;
     FILE *arch = fopen(vmi, "ab");
+
     //POR CADA REGISTRO ESCRIBO SUS 4 BYTES EN EL ARCHIVO
     for(i = 0; i < 32; i++){
-        fwrite(&(mv.registros[i]), sizeof(int), 1, arch);
+        valorReg = mv.registros[i];
+       // valorReg = (valorReg>>24)&0x000000ff | (valorReg>>8)&0x0000ff00 | (valorReg<<8)&0x00ff0000 | (valorReg<<24)&0xff000000;
+        fwrite(&valorReg, sizeof(int), 1, arch);
     }
     fclose(arch);
 }
 
 void escribeTablaSegImg(MaquinaVirtual mv, char vmi[]){
     int i;
-    short int base;
+    short int base,tope;
     FILE *arch = fopen(vmi, "ab");
     for(i=0; i<8; i++){
         base = mv.seg[i][0];
         base = ((base >> 8) & 0x00FF) | ((base << 8) & 0xFF00);
+        tope = mv.seg[i][1];
+        tope = ((tope >> 8) & 0x00FF) | ((tope << 8) & 0xFF00);
         fwrite(&base, sizeof(short int), 1, arch);
-        fwrite(&(mv.seg[i][1]), sizeof(short int), 1, arch);
+        fwrite(&tope, sizeof(short int), 1, arch);
 
 
     }
@@ -1263,7 +1272,7 @@ void breakPoint(MaquinaVirtual *mv, char vmiFileName[]){
 
     while(inst == '\n' && mv->registros[IP] != -1){
         step(mv);
-        escribeImg(*mv,vmiFileName,2, mv->MemSize / 1024);
+        escribeImg(*mv,vmiFileName,1, mv->MemSize / 1024);
         scanf("%c", &inst);
     }
     
