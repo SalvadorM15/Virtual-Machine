@@ -53,6 +53,8 @@ void main(int argC, char *argV[]){
     do{
         step(&mv);
     }while(mv.registros[IP] > -1 && mv.registros[IP] < mv.registros[CS] + codeSeg);
+
+   
 }
 //fin vmx.c
 

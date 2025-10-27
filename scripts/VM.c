@@ -556,7 +556,6 @@ void lectura_arch(MaquinaVirtual *mv, char nombre_arch[],unsigned short int para
         fread(codeSeg,sizeof(unsigned short int),1,arch);
         //cambio el endian del dato
         *codeSeg = ((*codeSeg >> 8) & 0x00FF) | ((*codeSeg << 8) & 0xFF00);
-         // por alguna razon lee 1 byte corrido a la izquierda
       
         //leo el tamanio de los segmentos de codigo
         if(*version == 2){
@@ -752,14 +751,12 @@ int logical_to_physical(int logical_dir ,MaquinaVirtual *mv, int cant_bytes, cha
         physical_dir += (logical_dir & 0x0000FFFF);
         if(strcmp(segmento, "STACK") != 0){
             if(physical_dir > segment_limit|| physical_dir < mv->seg[segment][0]){
-            physical_dir = -1;
-            printf("SEGFAULT 1 EN LOGICAL TO PHYSICAL\n");
+                physical_dir = -1;
           }
         }
     }
     else{
         physical_dir = -1;
-        printf("SEGFAULT 2 EN LOGICAL TO PHYSICAL\n");
     }
     return physical_dir;
 }
@@ -892,7 +889,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
         strcpy(segmento, "STACK");
     }
     else
-        strcpy(segmento, "CUAQUIERA");
+        strcpy(segmento, "CUAQLUIERA");
     // paso la direccion logica a fisica
     int direccion = logical_to_physical(mv->registros[LAR], mv, 4,segmento);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
@@ -1064,21 +1061,25 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
         else if (strcmp(argv[i], "-p") == 0 && vmx[0] != '\0') {
             *p = 1;          
         }
-        if(*p == 1){
+        else if(*p == 1){
             //guardo el string del parametro en el param segment
-            for(int j = *paramSeg; i<= *paramSeg + strlen(argv[i]) ; j++){
-                mv->ram[j] = (argv[i])[j];
+            printf("%s\n",argv[i]);
+            char argumento[50];
+            strcpy(argumento,argv[i]);
+            for(int j=0; j<strlen(argumento); j++){
+                mv->ram[*paramSeg + j] = argumento[j];
             }
+                *paramSeg += strlen(argumento)+1;
+                mv->ram[*paramSeg] = '\0';
             // incremento la cantidad de argumentos ingresados
             (*argCMV)++;
             //aumento el tamanio del paramSegment en el tamanio del argumento ingresado
-            *paramSeg += (strlen(argv[i]) + 1); // agrego el terminator
         }        
     }
      //agrego el puntero al primer argumento del param segment
     if(*p == 1){
             argvMV = (*paramSeg); int j = 0;
-            for(i = 0; i<argCMV; i++){
+            for(i = 0; i<*argCMV; i++){
                 mv->ram[*paramSeg] = j;
                 *paramSeg += 4;
                 do
