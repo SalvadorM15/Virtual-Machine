@@ -904,26 +904,10 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
             mv->registros[MBR] = get_valor_pila(mv, direccion);
         }
         else{
-            mv->registros[MBR] = 0;
-             if(cant_bytes == 1){
-                mv->registros[MBR] = mv->ram[direccion] & 0x000000FF;
-            }
-            else if(cant_bytes == 2){
-                mv->registros[MBR] = (mv->ram[direccion] & 0x000000FF) << 8;
-                mv->registros[MBR] |= (mv->ram[direccion + 1] & 0x000000FF);
-            }
-            else if(cant_bytes == 4){
-                mv->registros[MBR] = (mv->ram[direccion] & 0x000000FF) << 24;
-                mv->registros[MBR] |= (mv->ram[direccion + 1] & 0x000000FF) << 16;
-                mv->registros[MBR] |= (mv->ram[direccion + 2] & 0x000000FF) << 8;
-                mv->registros[MBR] |= (mv->ram[direccion + 3] & 0x000000FF);
-            }
             
             for(int i =0; i<cant_bytes; i++){
                 mv->registros[MBR] |= (mv->ram[direccion + i] & 0x000000FF) << (8 * (cant_bytes - 1 - i));
             }
-             if(mv->registros[MBR] & (1 << ((cant_bytes * 8) - 1))) // si el bit mas significativo del valor leido es 1, es negativo
-                mv->registros[MBR] |= 0xFFFFFFFF << (cant_bytes * 8); // lo extiendo a 32 bits
         }
         return mv->registros[MBR];
     }
