@@ -171,7 +171,9 @@ void sys(int op, MaquinaVirtual *mv){
     }
     else {
         if(get_valor_operando(op,mv) == 4){
-             int i = mv->registros[EDX];
+             int i = logical_to_physical(mv->registros[EDX],mv,1,"ds");
+             
+             //printf("direccion de escritura: %x\n",i);
              while(mv->ram[i] != '\0'){
                 printf("%c", mv->ram[i]);
                 i++;
@@ -362,6 +364,7 @@ void call(int operando, MaquinaVirtual *mv){
     mv->registros[SP] += 4;
     int numSeg = (mv->registros[SS] >> 16)&0x0000FFFF;
     int techo = mv->registros[SS] | mv->seg[numSeg][1];
+   // printf("direccion de retorno : %x\n", direccion);
     if(mv->registros[SP] > techo)
         error_handler(STACKUNDER);
     if(direccion < -1|| direccion >= mv->seg[(mv->registros[CS])>>16][1] + mv->seg[(mv->registros[CS])>>16][0])
@@ -978,35 +981,35 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
     }
     if(constant > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = offset + constant;
+        mv->seg[i][1] = constant;
         mv->registros[KS] = offset; // inicializo el puntero de ConstantSegment al comienzo del segmento de constantes
         i++;
         offset += constant;
     }    
 
     mv->seg[i][0] = offset;
-    mv->seg[i][1] = offset + code;
+    mv->seg[i][1] = code;
     mv->registros[CS] = creaDireccionLogica(i, 0); // inicializo el puntero de CodeSegment al comienzo del segmento de codigo
     i++;
     offset += code;
 
     if(data > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = offset + data;
+        mv->seg[i][1] = data;
         mv->registros[DS] = creaDireccionLogica(i, 0); // inicializo el puntero de DataSegment al comienzo del segmento de datos
         i++;
         offset += data;
     }
     if(extra > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = offset + extra;
+        mv->seg[i][1] = extra;
         mv->registros[ES] = creaDireccionLogica(i, 0); // inicializo el puntero de ExtraSegment al comienzo del segmento extra
         i++;
         offset += extra;
     }
     if(stack > 0){
         mv->seg[i][0] = offset;
-        mv->seg[i][1] = offset + stack;
+        mv->seg[i][1] = stack;
         mv->registros[SS] = creaDireccionLogica(i, 0); // inicializo el puntero de StackSegment al comienzo del segmento de stack
         mv->registros[SP] = mv->registros[SS] + stack; // inicializo el puntero SP al final del segmento de stack
         i++;
@@ -1018,7 +1021,7 @@ void creaTablaSegmentos(MaquinaVirtual *mv,int param, int code, int data, int ex
 
 
 // CHEQUEAR, NO HAY NINGUN TIPO DE CHANCE DE QUE ESTO ANDE
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argCMV, int argvMV, unsigned short int *paramSeg, MaquinaVirtual *mv){
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argCMV, int *argvMV, unsigned short int *paramSeg, MaquinaVirtual *mv){
     int i;
     mv->MemSize = 16384; // valor por defecto
     *d = 0;
@@ -1062,7 +1065,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
     }
      //agrego el puntero al primer argumento del param segment
     if(*p == 1){
-            argvMV = (*paramSeg); int j = 0;
+            *argvMV = (*paramSeg); int j = 0;
             for(i = 0; i<*argCMV; i++){
                 mv->ram[*paramSeg] = j;
                 *paramSeg += 4;
@@ -1126,16 +1129,17 @@ void leeHeaderImg(char *version, short int *tamMem, FILE *arch){
     printf("MEMORIA: %d KiB\n", *tamMem);
     
     //PASO A BYTES
-    *tamMem = (*tamMem) * 1024; 
+   // *tamMem = (*tamMem) * 1024; 
 }
 
 void leeRegistrosImg(MaquinaVirtual *mv, FILE *arch){
+
     int i;
     int reg;
     //LEE EL VALOR DEL REIGSTRO i Y LO GUARDA EN LA MAQUINA VIRTUAL
     for(i = 0; i < 32; i++){
         fread(&reg, sizeof(int), 1, arch);
-        //reg = (reg>>24)&0x000000ff | (reg>>8)&0x0000ff00 | (reg<<8)&0x00ff0000 | (reg<<24)&0xff000000;
+        reg = (reg>>24)&0x000000ff | (reg>>8)&0x0000ff00 | (reg<<8)&0x00ff0000 | (reg<<24)&0xff000000;
         mv->registros[i] = reg;
     }
 }

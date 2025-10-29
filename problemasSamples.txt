@@ -1,0 +1,25 @@
+arreglos para la reentrega:
+	
+	sample1:
+		parece llegar a un resultado pero no hay chances que este todo bien porque sin importar el parametro que le pasemos, da el mismo resultado
+		verificar los resultados y verificar si el stack underflow esta bien.
+		
+	sample2: 
+		en este me parece que quiere printear los parametros que le pasamos al main, pero por alguna razon tiene caida de segmento, creo que estamos guardando algo mal.
+		
+	sample3:
+		tira una sola salida y despues de uno de los ret tira segmentation foult, lo que pasa es que hardcodea un punto de retorno con una direccion logica y nosotros en el ret esperamos una direccion fisica, por ahi va el problema, esto se arregla poniendo en orden lo del ip.
+		
+	sample4:
+		este es un archivo de imagen, lo pude hacer funcionar y llega a un resultado, aunque no tengo ni idea si esta bien el resultado al que llega
+		
+	sample5:
+		funciona bien hasta que te pide hacer un cmp entre un operando de memoria de un byte y -1, aunque guarde ff no sale del ciclo, chequear como estamos guardando los operandos de memoria.
+		
+	sample6:
+		printea 2 strings, uno estoy seguro que esta bien, pero el otro no tengo ni idea porque es muy raro y no entenderia por que los profesores nos harian printear eso. Chequear.
+		
+		
+		
+		
+	

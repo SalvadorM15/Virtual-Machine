@@ -278,7 +278,7 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg){
     int ToperandoA,ToperandoB,operacion;
     short int ip;
     ip = mv->seg[mv->registros[CS] >> 16][0];
-    while (ip < mv->seg[mv->registros[CS] >> 16][1]){
+    while (ip < mv->seg[mv->registros[CS] >> 16][1] + mv->seg[mv->registros[CS] >> 16][0] ){
         char instruccion = mv->ram[ip];
         int dir = ip;
         if(ip == mv->registros[IP])

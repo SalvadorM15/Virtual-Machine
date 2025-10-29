@@ -141,7 +141,7 @@ void disassembler(MaquinaVirtual *mv, short int tamSeg);
 
 void set_valor_operando(int operando, int valor, MaquinaVirtual *mv);
 int get_valor_operando(int operando, MaquinaVirtual *mv);
-void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argcMV, int argvMV, unsigned short int *param, MaquinaVirtual *mv);
+void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, int *p, int *argcMV, int *argvMV, unsigned short int *param, MaquinaVirtual *mv);
 void breakPoint(MaquinaVirtual *mv, char vmiFileName[]);
 
 void leeImg(MaquinaVirtual *mv, char vmi[]);
