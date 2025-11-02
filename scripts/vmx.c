@@ -33,10 +33,8 @@ void main(int argC, char *argV[]){
         }
     }else{
         leeImg(&mv, vmi);
-        mv.registros[IP] = logical_to_physical(mv.registros[IP],&mv,4,"cs");
         constSeg = mv.seg[mv.registros[KS]>>16][0] + mv.seg[mv.registros[KS]>>16][1];
     }
-    
     
     
     if(vmi[0] != '\0'){
@@ -54,9 +52,10 @@ void main(int argC, char *argV[]){
         disassembler(&mv, codeSeg);
         }
     do{
-        //printf("ip: %x\n",mv.registros[IP]);
         step(&mv);
-    }while(mv.registros[IP] > -1 && mv.registros[IP] < logical_to_physical(mv.registros[CS]+mv.seg[mv.registros[CS]>>16][1],&mv,4,"cs"));
+        printf("ip: %x\n",mv.registros[IP]);
+        printf("cs: %x\n", mv.registros[CS]);
+    }while(mv.registros[IP] > -1 && (mv.registros[IP] < mv.registros[CS] + codeSeg) && (mv.registros[IP] >= mv.registros[CS]));
 
    
 }

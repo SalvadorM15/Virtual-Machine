@@ -15,6 +15,7 @@ void mov(int opa , int opb , MaquinaVirtual *mv){
 
     int valorOPB = get_valor_operando(opb,mv);
     set_valor_operando(opa,valorOPB,mv);
+    printf("valor final en el operando A: %x\n",get_valor_operando(opa,mv));
 }
 
 void add(int opa, int opb, MaquinaVirtual *mv){
@@ -26,9 +27,9 @@ void add(int opa, int opb, MaquinaVirtual *mv){
 
 
 void sub(int opa , int opb, MaquinaVirtual *mv){
-
+    int res = get_valor_operando(opa,mv);
    int  valorOPB = get_valor_operando(opb,mv);
-    set_valor_operando(opa,get_valor_operando(opa,mv)-valorOPB,mv);
+   set_valor_operando(opa,res-valorOPB,mv);
     evaluarCC(get_valor_operando(opa,mv),mv);
 
 
@@ -57,7 +58,9 @@ void div_op(int opa, int opb, MaquinaVirtual *mv){
 void cmp(int opa, int opb, MaquinaVirtual *mv){
     int valorOPB = get_valor_operando(opb,mv);
     int res;
-    res = get_valor_operando(opa,mv)-valorOPB;
+    res = get_valor_operando(opa,mv);
+    printf("comparo %x con %x \n",res,valorOPB);
+    res = res-valorOPB;
     evaluarCC(res, mv);
 }
 
@@ -268,8 +271,9 @@ void sys(int op, MaquinaVirtual *mv){
 }
 void jmp(int op, MaquinaVirtual *mv){
     int proxIP = (get_valor_operando(op,mv))&0x0000ffff;
-    proxIP += logical_to_physical(mv->registros[CS],mv,4,"CUAQUIERA");
-    if(proxIP < 0 || proxIP >= mv->seg[(mv->registros[CS])>>16][1] + 1)
+    printf("proxoffset: %x\n",proxIP);
+    proxIP += mv->registros[CS];
+    if(proxIP < 0 || proxIP >= mv->seg[(mv->registros[CS])>>16][1] + mv->registros[CS])
         error_handler(SEGFAULT);
     else{
         mv->registros[IP] =  proxIP;
@@ -317,7 +321,7 @@ void push(int operando,MaquinaVirtual *mv){
         //GUARDO EN valor EL VALOR DEL OPERANDO (VALOR A GUARDAR EN LA PILA) CONVERTIDO A 4 BYTES (CHEQUEAR)
         int valor = get_valor_operando(operando,mv);
         int direccion = logical_to_physical(mv->registros[SP], mv, 0, "STACK");
-
+        //printf("valor pusheado: %x\n",valor);
         set_valor_pila(mv,direccion,valor);
 
         //GUARDAR valor EN MEMORIA
@@ -345,7 +349,10 @@ void pop(int operando, MaquinaVirtual *mv){
 
 void call(int operando, MaquinaVirtual *mv){
     //CALL ES COMO HACER PUSH IP Y HACER JMP A LA SUBRUTINA DEL OPERANDO
-    push((mv->registros[IP])|0x02000000, mv);
+     mv->registros[SP]-=4;
+    int direccion = logical_to_physical(mv->registros[SP],mv,4,"x");
+    set_valor_pila(mv,direccion,mv->registros[IP]);
+    //printf("punto de retorno pusheado: %x\n",mv->registros[IP]);
     jmp(operando, mv);
 }
 
@@ -360,14 +367,18 @@ void call(int operando, MaquinaVirtual *mv){
     //obtengo el valor de la pila al que apunta sp
     int i = logical_to_physical(mv->registros[SP], mv, 4, "STACK");
     int direccion = 0;
+    //direccion de retorno en el tope de la pila
     direccion = get_valor_pila(mv,i);
+    //printf("direccion de retorno: %x\n", direccion);
+    //direccion |= mv->registros[CS];
+    //bajo una posicion de la pila
     mv->registros[SP] += 4;
     int numSeg = (mv->registros[SS] >> 16)&0x0000FFFF;
     int techo = mv->registros[SS] | mv->seg[numSeg][1];
    // printf("direccion de retorno : %x\n", direccion);
     if(mv->registros[SP] > techo)
         error_handler(STACKUNDER);
-    if(direccion < -1|| direccion >= mv->seg[(mv->registros[CS])>>16][1] + mv->seg[(mv->registros[CS])>>16][0])
+    if(direccion < -1|| direccion >= mv->seg[(mv->registros[CS])>>16][1] + mv->registros[CS])
         error_handler(SEGFAULT);
     else
         mv->registros[IP] = direccion;
@@ -611,7 +622,7 @@ void iniciaMV(MaquinaVirtual *mv, unsigned short int codeSeg,unsigned short int 
 
     //inicializo el ip
 
-    mv->registros[IP] = logical_to_physical(mv->registros[CS] | offsetEP, mv,4, "CODE"); // el entry point es un offset dentro del segmento de codigo
+    mv->registros[IP] = mv->registros[CS] + offsetEP;
 
 }
 
@@ -619,7 +630,9 @@ void step (MaquinaVirtual *mv){
 
     //primer paso: leer la instruccion del registro IP
     int ToperandoA,ToperandoB,operacion;
-    char instruccion = mv->ram[mv->registros[IP]];
+    int i = logical_to_physical(mv->registros[IP],mv,4,"x");
+    printf("ip: %x\n",i);
+    char instruccion = mv->ram[i];
 
     //leo los valores del cs y muevo el IP
     
@@ -628,7 +641,6 @@ void step (MaquinaVirtual *mv){
     lee_operandos(ToperandoA,ToperandoB,mv); // lee los siguientes bytes de los operandos A y B y mueve el ip
     
     //lo valores operando 1 y 2 quedan guardados en los registros OP1 Y OP2 respectivamente
-
     instruction_handler(mv->registros[OP1],mv->registros[OP2],mv->registros[OPC],mv);
 
 }
@@ -655,7 +667,8 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
     int i;
     mv->registros[OP1] = 0;
     mv->registros[OP2] = 0;
-    for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topB+1); i++){
+    int ip = logical_to_physical(mv->registros[IP],mv,4,"x");
+    for(i = (ip+1); i < (ip+ topB+1); i++){
         mv->registros[OP2] = ((mv->registros[OP2])<< 8);
         mv->registros[OP2] |= (mv->ram[i])&0x000000FF;
     }
@@ -663,11 +676,12 @@ void lee_operandos(int topA, int topB, MaquinaVirtual *mv){
         if(mv->registros[OP2] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
             mv->registros[OP2] = mv->registros[OP2] | 0x00FF0000; // lo extiendo a 32 bits
     }
+    ip += topB;
     mv->registros[IP] += topB;
 
-    for(i = ((mv->registros[IP])+1); i < ((mv->registros[IP]) + topA+1); i++){
+    for(i = (ip+1); i < (ip + topA+1); i++){
         mv->registros[OP1] = ((mv->registros[OP1]) << 8);
-        mv->registros[OP1] |= mv->ram[i]&0x000000FF;
+        mv->registros[OP1] |= (mv->ram[i])&0x000000FF;
     }
     if(topA == 2){
         if(mv->registros[OP1] & 0x00008000) // si el bit 15 del inmediato es 1, es negativo
@@ -799,13 +813,13 @@ void set_valor_operando(int operando, int valor, MaquinaVirtual *mv){
                 mv->registros[(operando & 0x0000001F)]= valor;
                 break;
             case 1: // 4to byte
-                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFFFF00) | ((unsigned int)(valor & 0x000000FF));
+                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x0000001F)] & 0XFFFFFF00) | ((unsigned int)(valor & 0x000000FF));
                 break;
             case 2: // 3er byte
-                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x00FFFFFF)] & 0XFFFF00FF) | ((unsigned int)(valor<<8 & 0x0000FF00));
+                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x0000001F)] & 0XFFFF00FF) | ((unsigned int)(valor<<8 & 0x0000FF00));
                 break;
             case 3: // 2 bytes menos significativos
-                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x00FFFFFF)] & 0xFFFF0000) | ((unsigned int)(valor & 0x0000FFFF));
+                mv->registros[(operando & 0x0000001F)] = (mv->registros[(operando & 0x0000001F)] & 0xFFFF0000) | ((unsigned int)(valor & 0x0000FFFF));
                 break;
             }
     }
@@ -846,15 +860,23 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
              int tipoReg = (operando & 0x00000000C0) >> 6;
             switch (tipoReg){
                 case 0: // registro de 4 bytes
-                    resultado = mv->registros[(operando & 0x00FFFFFF)];
+                    resultado = mv->registros[(operando & 0x0000001f)];
                     break;
-                case 1: // 4to byte
-                    resultado = (mv->registros[(operando & 0x00FFFFFF)] &  0xFF000000) >> 24;
+                case 1: // 4to byte -> byte menos significatico
+                    resultado = (mv->registros[(operando & 0x0000001f)] &  0x000000FF);
+                    if(((resultado & 0x00000080) >> 7) == 1)
+                            resultado |= 0xffffff00;
                     break;
-                case 2: // 3er byte
-                    resultado = (mv->registros[(operando & 0x00FFFFFF)] &  0x00FF0000) >> 16;
+                case 2: // 3er byte -> 2do byte menos significativo
+                    resultado = (mv->registros[(operando & 0x0000001f)] >> 8) &0x000000FF;
+                    
+                     if(((resultado & 0x00000080) >> 7) == 1)
+                            resultado |= 0xffffff00;
+                    break;
                 case 3: // 2 bytes menos significativos
-                    resultado = mv->registros[(operando & 0x00FFFFFF)] &  0x0000FFFF;
+                    resultado = mv->registros[(operando & 0x0000001f)] &  0x0000FFFF;
+                     if(((resultado & 0x00008000) >> 15) == 1)
+                            resultado |= 0xffff0000;
                     break;
                 }
         }
@@ -863,12 +885,17 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
                 switch((operando>>22)&0X00000003){
                     case 0: // long -> 4 bytes
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,4);
+                        //como es de 4 bytes no necesito correr el bit de signo
                         break;
                     case 2: // word -> 2 bytes 
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,2);
+                        if(((resultado & 0x00008000) >> 15) == 1)
+                            resultado |= 0xffff0000;
                         break;
                     case 3: // byte -> 1 byte
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,1);
+                        if(((resultado & 0x00000080) >> 7) == 1)
+                            resultado |= 0xffffff00;
                         break;
                     default:
                         error_handler(INVINS);
@@ -887,8 +914,10 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
 int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
 
     char segmento[10];
+
     mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logica
     if((operandoM & 0x001F0000)>>16 == BP || (operandoM & 0x001F0000)>>16 == SP){
+        printf("encontre un stack\n");
         strcpy(segmento, "STACK");
     }
     else
@@ -897,7 +926,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
     int direccion = logical_to_physical(mv->registros[LAR], mv, 4,segmento);
     mv->registros[MAR] = direccion; // guardo la direccion fisica en los 2 bytes menos significativos
     mv->registros[MAR] |=(3<<30); //quedan los 2 bits mas significativos diciendo que vna a guardar 3 bytes
-
+    mv->registros[MBR] = 0;
     if(direccion == -1){
         error_handler(SEGFAULT);
         return -1;
@@ -909,7 +938,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
         else{
             
             for(int i =0; i<cant_bytes; i++){
-                mv->registros[MBR] |= (mv->ram[direccion + i] & 0x000000FF) << (8 * (cant_bytes - 1 - i));
+                mv->registros[MBR] |= (mv->ram[direccion + i] & 0x000000ff) << 8*i;
             }
         }
         return mv->registros[MBR];
@@ -942,7 +971,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes)
         }
         else{
             for(int i = 0; i<cant_bytes; i++){
-                mv->ram[direccion + i] = (valor >> (8 * (cant_bytes - 1 - i))) & 0x000000FF;
+                mv->ram[direccion + cant_bytes -1 -i] = (valor >> 8*i) & 0x000000ff;
             }
         }
     }
@@ -1050,7 +1079,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
         }
         else if(*p == 1){
             //guardo el string del parametro en el param segment
-            printf("%s\n",argv[i]);
+            //printf("%s\n",argv[i]);
             char argumento[50];
             strcpy(argumento,argv[i]);
             for(int j=0; j<strlen(argumento); j++){
@@ -1067,13 +1096,18 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
     if(*p == 1){
             *argvMV = (*paramSeg); int j = 0;
             for(i = 0; i<*argCMV; i++){
-                mv->ram[*paramSeg] = j;
+                for(int k = 0; k<4; k++){
+                    mv->ram[*paramSeg + k] |= (j>>8*(3-k)) & (0x000000FF);
+                }
                 *paramSeg += 4;
                 do
                 {
                     j++;
+                    //print("%c",mv->ram[j])
                 } while (mv->ram[j] != '\0');
             }
+            printf("argv: %x\n", *argvMV);
+            print_parametros(*mv,*paramSeg);
         }
     if(vmx[0] == '\0' && vmi[0] == '\0'){
         error_handler(NOFILE);
@@ -1082,6 +1116,12 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
     
 }
 
+void print_parametros(MaquinaVirtual mv, unsigned short int paramseg){
+
+    for(int i=0; i<paramseg ; i++){
+        printf("%x ",mv.ram[i]);
+    }
+}
 
 // ----------------------------------------- IMAGEN ----------------------------------------------------
 
@@ -1282,22 +1322,24 @@ void iniciaPila(MaquinaVirtual *mv, int argc, int argv){
     if(mv->registros[SP] < mv->registros[SS])
         error_handler(STACKOVER);
     else{
+
         int direccionargv = mv->registros[SP] - 4;
-        int direccionargc = mv->registros[SP] - 8;
         direccionargv = logical_to_physical(direccionargv,mv,-4,"STACK");
+        set_valor_pila(mv,direccionargv,argv);
+
+        int direccionargc = mv->registros[SP] - 8;
         direccionargc = logical_to_physical(direccionargc,mv,-4,"STACK");
+        set_valor_pila(mv,direccionargc,argc);
         
-        for(int i = 0; i<4; i++){
+        /*for(int i = 0; i<4; i++){
             mv->ram[direccionargv + i] = (argv >> (8 * (3 - i))) & 0x000000FF;
             mv->ram[direccionargc + i] = (argc >> (8 * (3 - i))) & 0x000000FF;
-        }
-       
-
+        }*/
         mv->registros[SP] -= 8;
     }
-    int direccionRetorno = -1 ;//GUARDO EL TIPO DE OPERANDO (MEMORIA) EN LOS 2 BITS MAS SIGNIFICATIVOS Y -1 EN EL RESTO DE BITS
-    direccionRetorno = direccionRetorno & 0x0200FFFF;
-    push(direccionRetorno, mv);
+    mv->registros[SP] -= 4;
+    int direccion = logical_to_physical(mv->registros[SP],mv,4,"STACK");
+    set_valor_pila(mv,direccion,-1);
 }
 
 
@@ -1307,16 +1349,18 @@ int get_valor_pila(MaquinaVirtual *mv, int direccion){
     int valor = 0;
     for(int i = 0; i<4; i++){
         valor = (valor << 8) | (mv->ram[direccion + i]&0x000000FF);
+        //printf("valor : %x\n", valor);
+       // printf("byte: %x\n",(mv->ram[direccion + i]&0x000000FF));
 
     }
-    if(valor & 0x00008000) // si el bit 23 del valor es 1, es negativo
-            valor = valor | 0xFFFF0000; // lo extiendo a 32 bits
+    //printf("%x\n", valor);
     return valor;
 }
 
 void set_valor_pila(MaquinaVirtual *mv, int direccion, int valor){
     for(int i = 0; i<4; i++){
         mv->ram[direccion + i] = valor >> (8 * (3 - i)) & 0x000000FF;
+        //printf("byte: %x\n",(mv->ram[direccion + i]&0x000000FF));
     }
 }
 
