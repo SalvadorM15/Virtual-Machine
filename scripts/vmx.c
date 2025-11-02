@@ -26,6 +26,7 @@ void main(int argC, char *argV[]){
         //viene un .vmx y puede venir o no un .vmi
         strcpy(fileName,vmx);
         lectura_arch(&mv,fileName, paramSeg, &codeSeg, &dataSeg, &extraSeg, &stackSeg, &constSeg, &offsetEP, &version);
+        //printf("tamanio del segmento de stack: %d\n", stackSeg);
         iniciaMV(&mv,codeSeg,dataSeg,extraSeg,stackSeg,constSeg,paramSeg, offsetEP);
         if(version == 2){
             //Argc y Argv lo pongo en la pila a mano porque no son operandos validos

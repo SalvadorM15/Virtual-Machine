@@ -22,6 +22,7 @@ void mov(int opa , int opb , MaquinaVirtual *mv){
 void add(int opa, int opb, MaquinaVirtual *mv){
 
      int valorOPB = get_valor_operando(opb,mv);
+     //printf("sumo %x con %x \n", get_valor_operando(opa,mv), valorOPB);
     set_valor_operando(opa,get_valor_operando(opa,mv)+valorOPB,mv);
     evaluarCC(get_valor_operando(opa,mv),mv);
 }
@@ -320,6 +321,7 @@ void push(int operando,MaquinaVirtual *mv){
         int direccion = logical_to_physical(mv->registros[SP], mv, 0, "STACK");
         //printf("valor pusheado: %x\n",valor);
         set_valor_pila(mv,direccion,valor);
+        //printf("valor despues del push: %x\n", get_valor_pila(mv,direccion));
 
         //GUARDAR valor EN MEMORIA
 
@@ -628,7 +630,8 @@ void step (MaquinaVirtual *mv){
     //primer paso: leer la instruccion del registro IP
     int ToperandoA,ToperandoB,operacion;
     int i = logical_to_physical(mv->registros[IP],mv,4,"x");
-   //printf("ip: %x\n",i);
+    //printf("ip: %x\n",i);
+    //printf("eax: %x\n", mv->registros[EAX]);
     char instruccion = mv->ram[i];
 
     //leo los valores del cs y muevo el IP
@@ -934,7 +937,9 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
         else{
             
             for(int i =0; i<cant_bytes; i++){
-                mv->registros[MBR] |= (mv->ram[direccion + i] & 0x000000ff) << 8*i;
+                mv->registros[MBR] = mv->registros[MBR]<< 8;
+                mv->registros[MBR] |= mv->ram[direccion + i] & 0x000000FF;
+                //printf("byte consegido: %x\n", (mv->registros[MBR]));
             }
         }
        // printf("valor del gvm: %x\n",mv->registros[MBR]);
@@ -969,6 +974,7 @@ void set_valor_mem(int operandoM, int valor, MaquinaVirtual *mv, int cant_bytes)
         else{
             for(int i = 0; i<cant_bytes; i++){
                 mv->ram[direccion + cant_bytes -1 -i] = (valor >> 8*i) & 0x000000ff;
+                //printf("byte guardado: %x\n",mv->ram[direccion + cant_bytes -1 -i]);
             }
         }
     }
@@ -1102,6 +1108,7 @@ void manejaArgumentos(int argc, char *argv[], char vmx[], char vmi[], int *d, in
                     j++;
                     //print("%c",mv->ram[j])
                 } while (mv->ram[j] != '\0');
+                j++;
             }
             printf("argv: %x\n", *argvMV);
             print_parametros(*mv,*paramSeg);
