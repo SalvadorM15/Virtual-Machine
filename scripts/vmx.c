@@ -34,6 +34,9 @@ void main(int argC, char *argV[]){
     }else{
         leeImg(&mv, vmi);
         constSeg = mv.seg[mv.registros[KS]>>16][0] + mv.seg[mv.registros[KS]>>16][1];
+        codeSeg =  mv.seg[mv.registros[CS]>>16][1];
+        printf("%d\n", codeSeg);
+        
     }
     
     
@@ -53,9 +56,9 @@ void main(int argC, char *argV[]){
         }
     do{
         step(&mv);
-        printf("ip: %x\n",mv.registros[IP]);
-        printf("cs: %x\n", mv.registros[CS]);
-    }while(mv.registros[IP] > -1 && (mv.registros[IP] < mv.registros[CS] + codeSeg) && (mv.registros[IP] >= mv.registros[CS]));
+        //printf("ip: %x\n",mv.registros[IP]);
+        //printf("cs: %x\n", mv.registros[CS]);
+    }while(mv.registros[IP] > -1 && mv.registros[IP] < mv.registros[CS] + codeSeg && mv.registros[IP] >= mv.registros[CS]);
 
    
 }

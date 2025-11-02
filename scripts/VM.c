@@ -14,8 +14,9 @@
 void mov(int opa , int opb , MaquinaVirtual *mv){
 
     int valorOPB = get_valor_operando(opb,mv);
+    //printf("valor opb: %x\n", valorOPB);
     set_valor_operando(opa,valorOPB,mv);
-    printf("valor final en el operando A: %x\n",get_valor_operando(opa,mv));
+    //printf("valor final en el operando A: %x\n",get_valor_operando(opa,mv));
 }
 
 void add(int opa, int opb, MaquinaVirtual *mv){
@@ -59,7 +60,7 @@ void cmp(int opa, int opb, MaquinaVirtual *mv){
     int valorOPB = get_valor_operando(opb,mv);
     int res;
     res = get_valor_operando(opa,mv);
-    printf("comparo %x con %x \n",res,valorOPB);
+   // printf("comparo %x con %x \n",res,valorOPB);
     res = res-valorOPB;
     evaluarCC(res, mv);
 }
@@ -230,14 +231,10 @@ void sys(int op, MaquinaVirtual *mv){
                     default: //error_handler(INVINS);
                              break;
                     }
-                    // 1er byte:
-                    mv->ram[i]     = (entrada >> 24) & 0x000000FF;
-                    // 2do byte:
-                    mv->ram[i + 1] = (entrada >> 16) & 0x000000FF;
-                    // 3er byte:
-                    mv->ram[i + 2] = (entrada>> 8)  & 0x000000FF;
-                    // 4to byte:
-                    mv->ram[i + 3] = entrada & 0x000000FF;
+                    int cant_bytes = tamanioCelda;
+                    for(int j=0; j<cant_bytes ; j++){
+                        mv->ram[i + cant_bytes -1 -j] = (entrada >> 8*j) & 0x000000ff;
+                    }
                     
                 }
                 else {
@@ -271,7 +268,7 @@ void sys(int op, MaquinaVirtual *mv){
 }
 void jmp(int op, MaquinaVirtual *mv){
     int proxIP = (get_valor_operando(op,mv))&0x0000ffff;
-    printf("proxoffset: %x\n",proxIP);
+    //printf("proxoffset: %x\n",proxIP);
     proxIP += mv->registros[CS];
     if(proxIP < 0 || proxIP >= mv->seg[(mv->registros[CS])>>16][1] + mv->registros[CS])
         error_handler(SEGFAULT);
@@ -631,7 +628,7 @@ void step (MaquinaVirtual *mv){
     //primer paso: leer la instruccion del registro IP
     int ToperandoA,ToperandoB,operacion;
     int i = logical_to_physical(mv->registros[IP],mv,4,"x");
-    printf("ip: %x\n",i);
+   //printf("ip: %x\n",i);
     char instruccion = mv->ram[i];
 
     //leo los valores del cs y muevo el IP
@@ -864,18 +861,18 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
                     break;
                 case 1: // 4to byte -> byte menos significatico
                     resultado = (mv->registros[(operando & 0x0000001f)] &  0x000000FF);
-                    if(((resultado & 0x00000080) >> 7) == 1)
+                    if(resultado & 0x00000080)
                             resultado |= 0xffffff00;
                     break;
                 case 2: // 3er byte -> 2do byte menos significativo
                     resultado = (mv->registros[(operando & 0x0000001f)] >> 8) &0x000000FF;
                     
-                     if(((resultado & 0x00000080) >> 7) == 1)
+                     if(resultado & 0x00000080)
                             resultado |= 0xffffff00;
                     break;
                 case 3: // 2 bytes menos significativos
                     resultado = mv->registros[(operando & 0x0000001f)] &  0x0000FFFF;
-                     if(((resultado & 0x00008000) >> 15) == 1)
+                     if(resultado & 0x00008000)
                             resultado |= 0xffff0000;
                     break;
                 }
@@ -889,12 +886,12 @@ int get_valor_operando(int operando, MaquinaVirtual *mv){
                         break;
                     case 2: // word -> 2 bytes 
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,2);
-                        if(((resultado & 0x00008000) >> 15) == 1)
+                        if(resultado & 0x00008000)
                             resultado |= 0xffff0000;
                         break;
                     case 3: // byte -> 1 byte
                         resultado = get_valor_mem((operando & 0x00FFFFFF), mv,1);
-                        if(((resultado & 0x00000080) >> 7) == 1)
+                        if(resultado & 0x00000080)
                             resultado |= 0xffffff00;
                         break;
                     default:
@@ -917,7 +914,6 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
 
     mv->registros[LAR] = get_logical_dir(*mv, operandoM); // busco la direccion logica
     if((operandoM & 0x001F0000)>>16 == BP || (operandoM & 0x001F0000)>>16 == SP){
-        printf("encontre un stack\n");
         strcpy(segmento, "STACK");
     }
     else
@@ -941,6 +937,7 @@ int get_valor_mem(int operandoM, MaquinaVirtual *mv, int cant_bytes){
                 mv->registros[MBR] |= (mv->ram[direccion + i] & 0x000000ff) << 8*i;
             }
         }
+       // printf("valor del gvm: %x\n",mv->registros[MBR]);
         return mv->registros[MBR];
     }
 }
@@ -1140,6 +1137,7 @@ void leeImg(MaquinaVirtual *mv, char vmi[]){
         leeTablaSegmentosImg(mv, arch);
         leeMemoriaImg(mv, arch, tamMem);
         fclose(arch);
+        printSegTable(mv->seg);
     }
     else{
         printf("NO SE PUDO ABRIR EL ARCHIVO .vmi \n");
